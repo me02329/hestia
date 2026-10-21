@@ -108,3 +108,7 @@ Le retour utilisateur signale des éléments manquants en haut. La capture confi
   l’app TV TCL sur AirPlay, qui restait ensuite l’entrée courante ; le récepteur `com.tcl.airplay2` relançait alors
   lui-même `TVActivity` (uid 10094, 00:15:52) en revenant à l’accueil. Correctif : entrées AirPlay/IPTV exclues,
   service « Tuner » prioritaire (`com.tcl.tvinput/.TunerInputService/HW2`). À valider : touche TV → antenne.
+- Déclenchements suivants (00:15:50, 00:22:13, 00:25:10) : provoqués par les installations de l’APK pendant les
+  tests (`installPackageLI` tue Hestia ; l’app TV TCL laissée en arrière-plan, réglée sur AirPlay, reprend la main).
+- Dernière entrée de l’app TV TCL remise hors d’AirPlay (ouverture unique du tuner) : `persist.sys.livetvLatestInput`
+  vaut désormais `com.tcl.channelplus/...` (TCL Channel ; pas d’antenne/chaînes mémorisées). Plus de lien AirPlay.
