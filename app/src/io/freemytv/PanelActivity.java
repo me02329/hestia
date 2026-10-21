@@ -71,6 +71,11 @@ abstract class PanelActivity extends Activity {
         return super.dispatchKeyEvent(event);
     }
 
+    /** Rebuilds the list (something it shows changed). */
+    void refresh() {
+        view.setEntries(entries());
+    }
+
     /** Starts an activity from the panel; on failure says so instead of closing silently. */
     boolean launch(Intent intent) {
         try {

@@ -85,3 +85,11 @@ Le retour utilisateur signale des éléments manquants en haut. La capture confi
 - Langue : Auto / Français / English / Português dans les réglages ; heure 24 h, date et météo en français.
 - Vérifié sur la TV par touches simulées : Settings, appui long OK, touche TV (ouvre `com.tcl.tv`).
   L’appui long réel sur Home reste à confirmer à la télécommande.
+
+## Hestia 1.8-safe — 22 octobre 2026
+
+- « En cours de lecture » dans le panneau rapide (titre, app, lecture/pause, suivant, précédent) via les sessions
+  média. Accès aux notifications accordé par ADB au service vide `MediaListener`
+  (`cmd notification allow_listener io.freemytv/io.freemytv.MediaListener`) ; aucune notification n’est lue.
+  Retrait : `cmd notification disallow_listener io.freemytv/io.freemytv.MediaListener`.
+- Vérifié sur la TV : session Spotify en pause affichée. Commandes de lecture non déclenchées pendant le test.

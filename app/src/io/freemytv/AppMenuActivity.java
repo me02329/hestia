@@ -63,7 +63,7 @@ public class AppMenuActivity extends PanelActivity {
                 finish();
             }));
         } else {
-            if (at > 0) list.add(new Entry("chevron_right", Ui.tr("Mover para a esquerda", "Move left"), "", false, () -> {
+            if (at > 0) list.add(new Entry("chevron_left", Ui.tr("Mover para a esquerda", "Move left"), "", false, () -> {
                 favorites.add(at - 1, favorites.remove(at));
                 HomeApps.setFavorites(this, favorites);
                 finish();

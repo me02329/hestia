@@ -22,8 +22,11 @@ class AppPolicyTests(unittest.TestCase):
         self.assertEqual(app.get(ANDROID + "usesCleartextTraffic"), "false")
         self.assertNotEqual(app.get(ANDROID + "debuggable"), "true")
         self.assertEqual(app.findall("receiver"), [])
-        self.assertEqual(len(app.findall("service")), 1)
-        self.assertEqual(app.find("service").get(ANDROID + "permission"), "android.permission.BIND_DREAM_SERVICE")
+        # Only the screensaver and the (empty) media listener, each bound by the system alone.
+        self.assertEqual({s.get(ANDROID + "permission") for s in app.findall("service")},
+                         {"android.permission.BIND_DREAM_SERVICE",
+                          "android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"})
+        self.assertEqual(len(app.findall("service")), 2)
 
     def test_no_app_side_shell_or_adb(self):
         for path in (ROOT / "app/src").rglob("*.java"):
