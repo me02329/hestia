@@ -19,6 +19,7 @@ jobs:
           distribution: temurin
           java-version: '17'
       - run: python3 -m unittest discover -s tests -v
-      - run: sdkmanager 'platforms;android-34' 'build-tools;34.0.0'
+      # sdkmanager isn't on the runner's PATH; it ships with the preinstalled SDK.
+      - run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-34' 'build-tools;34.0.0' > /dev/null
       - run: ./build.sh
       # The ephemeral CI signing key and configured APK are deliberately not published.
