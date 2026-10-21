@@ -268,6 +268,8 @@ public class SettingsActivity extends Activity {
             c.drawText("Hestia", MARGIN - Ui.leftBearing(name, "Hestia"), 650, name);
             c.drawText(Ui.tr("Seu Início, simples e bonito.", "Your home screen, simple and beautiful."), MARGIN, 712, tagline);
             c.drawText(version(), MARGIN, 758, small);
+            Symbols.draw(getContext(), c, "storage", MARGIN + 14, 808 - Ui.halfCap(small), 24, 0x99FFFFFF);
+            c.drawText(storage(), MARGIN + 40, 808, small);
             List<Photos.Photo> list = Photos.get(getContext()).list();
             String credit = list.isEmpty() ? Ui.tr("Fotos do dia: Bing", "Photos of the day: Bing")
                     : Ui.tr("Foto: ", "Photo: ") + list.get(0).credit;
@@ -543,6 +545,20 @@ public class SettingsActivity extends Activity {
             int ba = b >>> 24, br = (b >> 16) & 255, bg = (b >> 8) & 255, bb = b & 255;
             return (Math.round(aa + (ba - aa) * f) << 24) | (Math.round(ar + (br - ar) * f) << 16)
                     | (Math.round(ag + (bg - ag) * f) << 8) | Math.round(ab + (bb - ab) * f);
+        }
+
+        /** "Storage: 12.3 GB free of 32 GB" (the internal storage, where apps go). */
+        private static String storage() {
+            try {
+                android.os.StatFs fs = new android.os.StatFs(android.os.Environment.getDataDirectory().getPath());
+                double free = fs.getAvailableBytes() / 1e9, total = fs.getTotalBytes() / 1e9;
+                boolean fr = Ui.LANG_FR.equals(Ui.lang);
+                String unit = fr ? " Go" : " GB";
+                return Ui.tr("Armazenamento", "Storage") + (fr ? " : " : ": ") + String.format(Ui.locale(), "%.1f", free)
+                        + unit + " " + Ui.tr("livres de", "free of") + " " + Math.round(total) + unit;
+            } catch (IllegalArgumentException e) {
+                return "";
+            }
         }
 
         private String version() {

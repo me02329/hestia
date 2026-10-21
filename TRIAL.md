@@ -97,3 +97,14 @@ Le retour utilisateur signale des éléments manquants en haut. La capture confi
   (← → entre les boutons). Vérifié par capture avec la session Spotify en pause.
 - AirPlay : récepteur TCL `com.tcl.airplay2` + démon MediaTek, service de premier plan permanent (normal) ;
   écran AirPlay visible pour la dernière fois le 2026-09-03 d’après usagestats. Déclencheur non encore observé.
+
+## Hestia 1.9-safe — 22 octobre 2026
+
+- Ajouts : carte « Rechercher » (Assistant Google via ACTION_ASSIST), stockage libre dans les réglages, titre cyber
+  dans l’économiseur. Vérifié par captures.
+- **AirPlay qui s’allume tout seul — cause trouvée (surveillance logcat de 5 min)** : l’entrée AirPlay de TCL
+  (`com.mediatek.AirplayAPK/.AirPlayTvInputService`) se déclare `TYPE_TUNER`, appartient au système et apparaît en
+  premier ; `HomeApps.tunerInput()` la prenait pour l’antenne. « TV en direct » et la touche TV ouvraient donc
+  l’app TV TCL sur AirPlay, qui restait ensuite l’entrée courante ; le récepteur `com.tcl.airplay2` relançait alors
+  lui-même `TVActivity` (uid 10094, 00:15:52) en revenant à l’accueil. Correctif : entrées AirPlay/IPTV exclues,
+  service « Tuner » prioritaire (`com.tcl.tvinput/.TunerInputService/HW2`). À valider : touche TV → antenne.

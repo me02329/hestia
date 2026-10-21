@@ -48,7 +48,7 @@ import java.util.regex.Pattern;
 final class HomeApps {
     private HomeApps() {}
 
-    static final int APP = 0, LIVE_TV = 1, INPUT = 2, SETTINGS = 4, ANDROID_SETTINGS = 5;
+    static final int APP = 0, LIVE_TV = 1, INPUT = 2, SETTINGS = 4, ANDROID_SETTINGS = 5, SEARCH = 6;
     /** Image size of each card (16:9; on screen it shows up to ~330 px wide). */
     static final int TILE_W = 384, TILE_H = 216;
 
@@ -137,6 +137,13 @@ final class HomeApps {
         it.label = label;
         it.symbol = symbol;
         return it;
+    }
+
+    /** Google voice search / Assistant (what the remote's mic button opens), when the TV has it. */
+    static Item search(Context c) {
+        Intent assist = new Intent(Intent.ACTION_ASSIST);
+        if (assist.resolveActivity(c.getPackageManager()) == null) return null;
+        return shortcut(SEARCH, "search", Ui.tr("Pesquisar", "Search"), "mic");
     }
 
     /** TV settings and this app's settings (the TV row of the home screen). */
@@ -302,6 +309,9 @@ final class HomeApps {
             case ANDROID_SETTINGS:
                 intent = new Intent(Settings.ACTION_SETTINGS);
                 break;
+            case SEARCH:
+                intent = new Intent(Intent.ACTION_ASSIST);
+                break;
             default:
                 return false;
         }
@@ -334,23 +344,35 @@ final class HomeApps {
         return null;
     }
 
-    /** The TV's antenna (tuner) input, or null. The TV maker's own tuner comes first. */
+    /**
+     * The TV's antenna (tuner) input, or null. Some "tuner" inputs aren't antennas: on TCL, AirPlay and the IPTV
+     * channels declare TYPE_TUNER too (and AirPlay is listed first), so those are skipped; a service named like a tuner
+     * comes first, then the TV maker's own, then any other.
+     */
     static String tunerInput(Context c) {
         TvInputManager tim = (TvInputManager) c.getSystemService(Context.TV_INPUT_SERVICE);
         if (tim == null) return null;
-        String fallback = null;
+        String best = null;
+        int bestScore = -1;
         try {
             for (TvInputInfo info : tim.getTvInputList()) {
                 if (info.getType() != TvInputInfo.TYPE_TUNER || info.isPassthroughInput()) continue;
+                String id = info.getId().toLowerCase(Locale.ROOT);
+                if (id.contains("airplay") || id.contains("iptv") || id.contains("channelplus")) continue;
+                int score = 0;
+                if (id.contains("tuner")) score += 2;
                 if (info.getServiceInfo() != null && info.getServiceInfo().applicationInfo != null
                         && (info.getServiceInfo().applicationInfo.flags & android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0) {
-                    return info.getId();
+                    score += 1;
                 }
-                if (fallback == null) fallback = info.getId();
+                if (score > bestScore) {
+                    bestScore = score;
+                    best = info.getId();
+                }
             }
         } catch (RuntimeException ignored) {
         }
-        return fallback;
+        return best;
     }
 
     static Intent launchIntent(PackageManager pm, String pkg) {

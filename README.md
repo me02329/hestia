@@ -15,13 +15,19 @@ désactivations automatiques, recommandations TMDB et cours crypto retirés.
 - **Actus cyber :** titres des dernières 24 h (The Hacker News, BleepingComputer, SecurityWeek, CERT-FR, ZATAZ),
   un toutes les 8 s, désactivable.
 - **Rangées :** apps favorites (choisies dans les réglages), TV en direct et entrées HDMI, toutes les apps.
-- **Économiseur :** diaporama des photos du jour, 45 s par photo, avec heure et météo.
-- **Réglages :** apps favorites, actus, aperçu de l’économiseur, choix de l’accueil via Android, réglages TV.
+- **Économiseur :** diaporama des photos du jour, 45 s par photo, avec heure, météo et un titre cyber.
+- **Réglages :** apps favorites, apps masquées, tri de Toutes les apps, langue (auto/français/anglais/portugais),
+  actus, aperçu de l’économiseur, choix de l’accueil via Android, stockage libre.
+- **Télécommande :** bouton Settings et appui long Home → panneau rapide (lecteur de la musique/vidéo en cours avec
+  pochette et progression, sources, image, son, réseau, accessoires) ; touche TV → TV en direct ; appui long OK sur
+  une app → menu (favoris, déplacer, masquer, infos, Play Store, désinstaller).
+- **Rangée TV :** TV en direct, HDMI, recherche vocale Google, Play Store, Hestia, réglages TV (cartes colorées).
 - **Robustesse :** après trois plantages Java en cinq minutes, écran de récupération (autre accueil, réglages,
   réessayer).
 
 Accès réseau limité à une liste fixe d’hôtes HTTPS dans `Net.java`, sans redirections, réponses bornées.
-Interface en anglais ou portugais (selon la langue de la TV).
+Le lecteur du panneau rapide demande l’accès aux notifications pour le service vide `MediaListener`
+(`adb shell cmd notification allow_listener io.freemytv/io.freemytv.MediaListener`) ; aucune notification n’est lue.
 
 ## Construire
 

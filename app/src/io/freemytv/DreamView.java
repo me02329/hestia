@@ -22,7 +22,8 @@ import java.util.concurrent.Executors;
 
 /**
  * The screensaver: the photos of the day (Photos) in full screen, one every 45 s, with a slow zoom and pan and a
- * crossfade; bottom left the time, date and weather, bottom right the photo's title and credit. The text drifts a
+ * crossfade; bottom left the time, date and weather (above them, one cyber headline per photo when the headlines are
+ * on), bottom right the photo's title and credit. The text drifts a
  * little every minute (no burn-in). Without photos yet: the time on black until the first ones arrive. Any key exits.
  */
 final class DreamView extends View implements Choreographer.FrameCallback, Photos.Listener, HomeData.Listener {
@@ -30,6 +31,8 @@ final class DreamView extends View implements Choreographer.FrameCallback, Photo
     private static final long SHOW_MS = 45_000, FADE_MS = 2_500;
 
     private final Photos photos;
+    private final News news;
+    private final boolean newsOn;
     private final HomeData data;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private static final ExecutorService LOADER = Executors.newSingleThreadExecutor();
@@ -45,12 +48,14 @@ final class DreamView extends View implements Choreographer.FrameCallback, Photo
     private final Paint image = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.DITHER_FLAG);
     private final Paint scrim = new Paint();
     private final Paint clock, date;
-    private final TextPaint title, credit;
+    private final TextPaint title, credit, headline;
+    private final Paint pill = new Paint(Paint.ANTI_ALIAS_FLAG), pillText;
 
     private final Runnable advance = new Runnable() {
         @Override public void run() {
             if (!running) return;
             data.refreshIfStale();
+            if (newsOn) news.refreshIfStale();
             photos.refreshIfStale();
             next();
             handler.postDelayed(this, SHOW_MS);
@@ -60,6 +65,8 @@ final class DreamView extends View implements Choreographer.FrameCallback, Photo
     DreamView(Context c) {
         super(c);
         photos = Photos.get(c);
+        news = News.get(c);
+        newsOn = News.enabled(c);
         data = HomeData.get(c);
         clock = Ui.numbers(Ui.light, 112, Color.WHITE);
         date = Ui.text(Ui.medium, 30, 0xE6FFFFFF);
@@ -67,6 +74,11 @@ final class DreamView extends View implements Choreographer.FrameCallback, Photo
         title.setTextAlign(Paint.Align.RIGHT);
         credit = new TextPaint(Ui.text(Ui.regular, 22, 0x99FFFFFF));
         credit.setTextAlign(Paint.Align.RIGHT);
+        headline = new TextPaint(Ui.text(Ui.medium, 30, 0xF2FFFFFF));
+        headline.setShadowLayer(14, 0, 2, 0xAA000000);
+        pillText = Ui.text(Ui.semibold, 18, Color.WHITE);
+        pillText.setLetterSpacing(0.08f);
+        pill.setColor(0xD9E5484D);
         for (Paint p : new Paint[] {clock, date, title, credit}) p.setShadowLayer(14, 0, 2, 0xAA000000);
         scrim.setShader(new LinearGradient(0, H * 0.55f, 0, H, 0x00000000, 0xB3000000, Shader.TileMode.CLAMP));
     }
@@ -171,6 +183,15 @@ final class DreamView extends View implements Choreographer.FrameCallback, Photo
         HomeData.Weather wx = data.weather;
         if (!Double.isNaN(wx.temp)) line += "  ·  " + HomeData.degrees(wx.temp) + " " + HomeData.condition(wx.code, wx.isDay);
         c.drawText(line, x, base + 56, date);
+        List<News.Headline> heads = newsOn ? news.recent() : null;
+        if (heads != null && !heads.isEmpty()) {
+            News.Headline h = heads.get(Math.max(0, slides) % heads.size());
+            float hy = base - 128, pw = pillText.measureText("CYBER") + 24;
+            c.drawRoundRect(x, hy - 26, x + pw, hy + 6, 16, 16, pill);
+            c.drawText("CYBER", x + 12, hy - 10 + Ui.halfCap(pillText), pillText);
+            c.drawText(TextUtils.ellipsize(h.title, headline, 1000, TextUtils.TruncateAt.END).toString(),
+                    x + pw + 16, hy + 1, headline);
+        }
         if (currentInfo != null) {
             float right = W - MARGIN - dx;
             c.drawText(TextUtils.ellipsize(currentInfo.title, title, 760, TextUtils.TruncateAt.END).toString(),

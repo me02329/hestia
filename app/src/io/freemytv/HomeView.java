@@ -214,6 +214,8 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
 
     private static List<HomeApps.Item> inputsRow(Context c) {
         List<HomeApps.Item> list = HomeApps.allInputs(c);
+        HomeApps.Item search = HomeApps.search(c);
+        if (search != null) list.add(search);
         HomeApps.Item store = HomeApps.playStore(c);
         if (store != null) list.add(store);
         list.addAll(HomeApps.settingsShortcuts());
@@ -549,7 +551,7 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
         }
     }
 
-    /** Shortcut card colors: live TV coral, inputs blue, Hestia night (with the emblem), TV settings teal. */
+    /** Shortcut card colors: live TV coral, inputs blue, search violet, Hestia night (emblem), TV settings teal. */
     private LinearGradient cardShader(int kind) {
         LinearGradient g = cardShaders.get(kind);
         if (g == null) {
@@ -558,6 +560,7 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
                 case HomeApps.LIVE_TV: from = 0xFFF0625F; to = 0xFF9B1C3A; break;
                 case HomeApps.INPUT: from = 0xFF4F8CF7; to = 0xFF3B2FB8; break;
                 case HomeApps.SETTINGS: from = 0xFF2E2448; to = 0xFF120C1E; break;
+                case HomeApps.SEARCH: from = 0xFF8B6CFF; to = 0xFF2F5BD3; break;
                 default: from = 0xFF1FB5A3; to = 0xFF0E5470; break;
             }
             g = new LinearGradient(0, 0, 1, 1, from, to, Shader.TileMode.CLAMP);

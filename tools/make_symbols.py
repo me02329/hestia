@@ -19,7 +19,8 @@ MAP = {
     "chevron_down": ("keyboard_arrow_down", 0), "sunrise": ("wb_twilight", 1), "sunset": ("wb_twilight", 1),
     "live_tv": ("live_tv", 1), "bitcoin": ("currency_bitcoin", 0),
     "pause": ("pause", 1), "skip_next": ("skip_next", 1), "skip_previous": ("skip_previous", 1),
-    "music": ("music_note", 1), "chevron_left": ("chevron_left", 0),
+    "music": ("music_note", 1), "chevron_left": ("chevron_left", 0), "search": ("search", 0), "mic": ("mic", 1),
+    "storage": ("hard_drive", 1),
 }
 
 
