@@ -27,6 +27,20 @@ class FakeTV:
         self.fail_dream = False
         self.disconnect = False
         self.interrupt_home = False
+        self.disabled_set = set()
+        self.fail_package = None
+
+    def disabled(self):
+        return set(self.disabled_set)
+
+    def set_enabled(self, package, enabled):
+        self.mutations.append(("package", package, enabled))
+        if package == self.fail_package:
+            raise tv.SafetyError("simulated package failure")
+        if enabled:
+            self.disabled_set.discard(package)
+        else:
+            self.disabled_set.add(package)
 
     def identity(self):
         if self.disconnect:
@@ -34,7 +48,11 @@ class FakeTV:
         return dict(self.ident)
 
     def homes(self):
-        return set(self.enabled)
+        # Google TV's HOME disappears while its package is disabled.
+        homes = set(self.enabled)
+        if tv.STOCK[0] in self.disabled_set:
+            homes.discard(ORIGINAL)
+        return homes
 
     def home(self):
         if self.disconnect:
@@ -130,6 +148,48 @@ class DeploymentTests(unittest.TestCase):
             tv.activate(self.adb, self.path)
         self.assertEqual(self.adb.mutations, [("home", tv.HOME), ("home", ORIGINAL)])
         self.assertEqual(self.journal()["phase"], "restored")
+
+    def test_stock_home_round_trip_touches_only_stock_packages(self):
+        self.adb.setting = tv.DREAM   # screensaver switched to Hestia's by hand meanwhile
+        tv.disable_stock_home(self.adb, self.path)
+        self.assertEqual(self.adb.disabled_set, set(tv.STOCK))
+        self.assertEqual(self.adb.current, tv.HOME)
+        self.assertEqual(tv.read_json(tv.stock_path(self.path))["packages"], sorted(tv.STOCK))
+        tv.enable_stock_home(self.adb, self.path)
+        self.assertEqual(self.adb.disabled_set, set())
+        self.assertEqual(self.adb.current, ORIGINAL)
+        self.assertEqual(self.adb.setting, "org.example.dream/.Dream")
+        self.assertFalse(tv.stock_path(self.path).exists())
+        touched = {m[1] for m in self.adb.mutations if m[0] == "package"}
+        self.assertEqual(touched, set(tv.STOCK))
+
+    def test_stock_home_failure_rolls_back_packages(self):
+        self.adb.fail_package = tv.STOCK[1]
+        with self.assertRaisesRegex(tv.SafetyError, "re-enabled"):
+            tv.disable_stock_home(self.adb, self.path)
+        self.assertEqual(self.adb.disabled_set, set())
+        self.assertEqual(self.adb.current, ORIGINAL)
+
+    def test_enable_stock_home_needs_record_or_explicit_assumption(self):
+        self.adb.disabled_set = set(tv.STOCK)   # switched by hand, no record
+        self.adb.current = tv.HOME
+        with self.assertRaisesRegex(tv.SafetyError, "assume-stock"):
+            tv.enable_stock_home(self.adb, self.path)
+        self.assertEqual(self.adb.mutations, [])
+        tv.enable_stock_home(self.adb, self.path, assume_stock=True)
+        self.assertEqual(self.adb.disabled_set, set())
+        self.assertEqual(self.adb.current, ORIGINAL)
+
+    def test_stock_home_refuses_other_tv_and_foreign_packages(self):
+        self.adb.ident["fingerprint"] = "other-firmware"
+        with self.assertRaises(tv.SafetyError):
+            tv.disable_stock_home(self.adb, self.path)
+        self.adb.ident["fingerprint"] = "test-firmware"
+        tv.durable_write(tv.stock_path(self.path), {"schema": 1, "snapshot": tv.digest(tv.read_json(self.path)),
+                                                    "packages": ["com.example.important"]})
+        with self.assertRaisesRegex(tv.SafetyError, "never disables"):
+            tv.enable_stock_home(self.adb, self.path)
+        self.assertEqual([m for m in self.adb.mutations if m[0] == "package"], [])
 
     def test_disconnect_keeps_journal_for_reconnection(self):
         def disconnect(value):

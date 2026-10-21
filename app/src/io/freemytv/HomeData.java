@@ -5,48 +5,31 @@ import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Looper;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.TimeZone;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Weather/sunrise/sunset for your location (Open-Meteo, every 30 min, no key), cached so the screen opens with numbers.
+ * The current weather for your location (Open-Meteo, every 30 min, no key), cached so the screen opens with it.
  * Only fetched while the home screen or the screensaver is visible (the screen asks). Location from config.properties.
  */
 final class HomeData {
     private static final String WEATHER_URL = "https://api.open-meteo.com/v1/forecast?latitude=" + Config.LATITUDE
             + "&longitude=" + Config.LONGITUDE
-            + "&current=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset"
-            + "&hourly=temperature_2m,weather_code,is_day&timezone=auto&forecast_days=2";
+            + "&current=temperature_2m,weather_code,is_day&timezone=auto";
     private static final long WEATHER_EVERY = 30 * 60_000L;
-    private static final Locale PT = new Locale("pt", "BR");
 
     interface Listener { void onData(); }
 
     static final class Weather {
-        double temp = Double.NaN, max = Double.NaN, min = Double.NaN;
+        double temp = Double.NaN;
         int code = -1;
         boolean isDay = true;
-        long sunrise, sunset;   // today's, in epoch ms
-        // Next hours (starting at the next full hour): time, temperature, code and day/night.
-        final List<Long> hours = new ArrayList<>();
-        final List<Double> hourTemp = new ArrayList<>();
-        final List<Integer> hourCode = new ArrayList<>();
-        final List<Boolean> hourDay = new ArrayList<>();
     }
 
     private static HomeData instance;
@@ -104,41 +87,12 @@ final class HomeData {
     }
 
     private static Weather parseWeather(String body) throws Exception {
-        JSONObject o = new JSONObject(body);
-        TimeZone zone = TimeZone.getTimeZone(o.optString("timezone", TimeZone.getDefault().getID()));
+        JSONObject current = new JSONObject(body).getJSONObject("current");
         Weather w = new Weather();
-        JSONObject current = o.getJSONObject("current");
         w.temp = current.getDouble("temperature_2m");
         w.code = current.getInt("weather_code");
         w.isDay = current.optInt("is_day", 1) == 1;
-        JSONObject daily = o.getJSONObject("daily");
-        w.max = daily.getJSONArray("temperature_2m_max").getDouble(0);
-        w.min = daily.getJSONArray("temperature_2m_min").getDouble(0);
-        w.sunrise = localTime(daily.getJSONArray("sunrise").getString(0), zone);
-        w.sunset = localTime(daily.getJSONArray("sunset").getString(0), zone);
-        JSONObject hourly = o.optJSONObject("hourly");
-        if (hourly != null) {
-            JSONArray times = hourly.getJSONArray("time");
-            JSONArray temps = hourly.getJSONArray("temperature_2m");
-            JSONArray codes = hourly.getJSONArray("weather_code");
-            JSONArray days = hourly.optJSONArray("is_day");
-            long now = System.currentTimeMillis();
-            for (int i = 0; i < times.length() && w.hours.size() < 6; i++) {
-                long at = localTime(times.getString(i), zone);
-                if (at <= now) continue;
-                w.hours.add(at);
-                w.hourTemp.add(temps.getDouble(i));
-                w.hourCode.add(codes.getInt(i));
-                w.hourDay.add(days == null || days.optInt(i, 1) == 1);
-            }
-        }
         return w;
-    }
-
-    private static long localTime(String iso, TimeZone zone) throws ParseException {
-        SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.US);
-        f.setTimeZone(zone);
-        return f.parse(iso).getTime();
     }
 
     private static String get(String url) throws IOException {
@@ -146,10 +100,6 @@ final class HomeData {
     }
 
     // MARK: - Formatting
-
-    private static Locale locale() {
-        return Ui.locale();
-    }
 
     /** The weather in words, from Open-Meteo's WMO code. */
     static String condition(int code, boolean day) {
@@ -201,21 +151,5 @@ final class HomeData {
         if (unit.startsWith("F")) return true;
         if (unit.startsWith("C")) return false;
         return "US".equals(Locale.getDefault().getCountry());
-    }
-
-    static String hour(long at) {
-        return Ui.en && !Ui.h24 ? new SimpleDateFormat("h a", Locale.US).format(new java.util.Date(at))
-                : new SimpleDateFormat("HH'h'", PT).format(new java.util.Date(at));
-    }
-
-    /** How long ago the data was fetched, if it's stale (no internet): "12 min ago". */
-    static String staleness(long at, long every) {
-        if (at == 0) return "";
-        long age = System.currentTimeMillis() - at;
-        if (age < every * 2) return "";
-        long minutes = age / 60_000;
-        if (Ui.en) return minutes < 60 ? minutes + " min ago" : (minutes / 60) + " h ago";
-        if (Ui.LANG_FR.equals(Ui.lang)) return minutes < 60 ? "il y a " + minutes + " min" : "il y a " + (minutes / 60) + " h";
-        return minutes < 60 ? "há " + minutes + " min" : "há " + (minutes / 60) + " h";
     }
 }

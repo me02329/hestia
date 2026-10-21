@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """Conservative, journaled HOME switching over an already paired ADB transport.
 
-Never disables packages, changes debugging, installs an APK, or starts an activity.
+Never changes debugging, installs an APK, or starts an activity.
 Snapshot -> preview the installed app manually -> activate -> restore.
+
+On firmwares where Google TV's launcher outranks any chosen HOME, disable-stock-home turns off exactly the
+STOCK packages (recorded next to the backup) and selects Hestia; enable-stock-home turns those back on and puts
+the snapshot's HOME and screensaver back. No other package is ever touched.
 """
 import argparse
 from contextlib import contextmanager
@@ -19,6 +23,9 @@ import tempfile
 import time
 
 HOME = "io.freemytv/io.freemytv.HomeActivity"
+# Google TV's launcher and its setup "recovery" HOME, both above any user-chosen HOME on the TCL G08.
+STOCK = ("com.google.android.apps.tv.launcherx", "com.google.android.tungsten.setupwraith")
+PACKAGE = re.compile(r"[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)+")
 DREAM = "io.freemytv/io.freemytv.Screensaver"
 SETTING = "screensaver_components"
 HOME_SETTLE_SECONDS = 10
@@ -109,6 +116,17 @@ class Adb:
             if time.monotonic() >= deadline:
                 raise SafetyError("Android did not retain the requested HOME")
             time.sleep(0.5)
+
+    def disabled(self):
+        output = self.shell("pm", "list", "packages", "-d", "--user", "0")
+        return {line[len("package:"):].strip() for line in output.splitlines() if line.startswith("package:")}
+
+    def set_enabled(self, package, enabled):
+        if not PACKAGE.fullmatch(package):
+            raise SafetyError("Invalid package name")
+        self.shell("pm", "enable" if enabled else "disable-user", "--user", "0", package)
+        if (package in self.disabled()) == enabled:
+            raise SafetyError("Package state read-back failed: " + package)
 
     def set_dream(self, value):
         if value is None:
@@ -282,16 +300,83 @@ def activate(adb, path, screensaver=False):
         raise SafetyError("Activation failed; original settings restored") from original
 
 
+def stock_path(path):
+    return Path(str(path) + ".stock.json")
+
+
+def same_tv(adb, saved):
+    if saved.get("schema") != 1 or saved.get("identity") != adb.identity():
+        raise SafetyError("Snapshot belongs to another TV, user, or firmware; no changes made")
+
+
+def disable_stock_home(adb, path):
+    """Disables the STOCK packages still enabled, recording them first, then selects Hestia as HOME."""
+    saved = read_json(path)
+    same_tv(adb, saved)
+    if HOME not in adb.homes():
+        raise SafetyError("Install and preview Hestia before disabling the stock home")
+    targets = [p for p in STOCK if p not in adb.disabled()]
+    record = read_json(stock_path(path)) if stock_path(path).exists() else {"packages": []}
+    packages = sorted(set(record.get("packages", [])) | set(targets))
+    # Persist which packages this tool owns before the first change, so enable-stock-home can always undo it.
+    durable_write(stock_path(path), {"schema": 1, "snapshot": digest(saved), "packages": packages})
+    done = []
+    try:
+        for package in targets:
+            adb.set_enabled(package, False)
+            done.append(package)
+        adb.set_home(HOME)
+    except (Exception, KeyboardInterrupt) as original:
+        for package in reversed(done):
+            try:
+                adb.set_enabled(package, True)
+            except SafetyError:
+                pass
+        raise SafetyError("Disabling the stock home failed; packages re-enabled where possible. "
+                          "Run enable-stock-home after reconnecting if needed.") from original
+
+
+def enable_stock_home(adb, path, assume_stock=False):
+    """Re-enables the recorded packages, then puts the snapshot's HOME (and screensaver, if still Hestia's) back."""
+    saved = read_json(path)
+    same_tv(adb, saved)
+    if stock_path(path).exists():
+        record = read_json(stock_path(path))
+        if record.get("snapshot") != digest(saved):
+            raise SafetyError("Stock-home record does not match this snapshot")
+        packages = record.get("packages", [])
+    elif assume_stock:
+        packages = list(STOCK)   # explicitly requested: the TV was switched by hand before this tool knew
+    else:
+        raise SafetyError("No stock-home record; pass --assume-stock to re-enable " + ", ".join(STOCK))
+    if any(p not in STOCK for p in packages):
+        raise SafetyError("Stock-home record names packages this tool never disables")
+    disabled = adb.disabled()
+    for package in packages:
+        if package in disabled:
+            adb.set_enabled(package, True)
+    adb.set_home(saved["home"])
+    if saved["dream"] != DREAM and adb.dream() == DREAM:
+        adb.set_dream(saved["dream"])
+    if stock_path(path).exists():
+        os.unlink(stock_path(path))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("status", "snapshot", "activate", "restore"))
+    parser.add_argument("action", choices=("status", "snapshot", "activate", "restore",
+                                           "disable-stock-home", "enable-stock-home"))
     parser.add_argument("--serial", required=True, help="Exact identifier from adb devices; never auto-selects")
     parser.add_argument("--adb", default="adb")
     parser.add_argument("--backup", type=Path, help="Private JSON path; retain it and its .journal.json sibling")
     parser.add_argument("--screensaver", action="store_true", help="Also switch screensaver (activate only)")
+    parser.add_argument("--assume-stock", action="store_true",
+                        help="enable-stock-home without a record: re-enable the stock packages anyway")
     args = parser.parse_args()
     if args.action != "status" and args.backup is None:
         parser.error("--backup is required")
+    if args.assume_stock and args.action != "enable-stock-home":
+        parser.error("--assume-stock applies only to enable-stock-home")
     if args.screensaver and args.action != "activate":
         parser.error("--screensaver applies only to activate")
     adb = Adb(args.adb, args.serial)
@@ -300,10 +385,17 @@ def main():
         with device_lock(identity):
             if args.action == "status":
                 print(json.dumps({"sdk": identity["sdk"], "home": adb.home(), "homes": sorted(adb.homes()),
-                                  "screensaver": adb.dream()}, indent=2))
+                                  "screensaver": adb.dream(),
+                                  "stock_disabled": sorted(set(STOCK) & adb.disabled())}, indent=2))
             elif args.action == "snapshot":
                 snapshot(adb, args.backup)
                 print("Snapshot saved; TV unchanged.")
+            elif args.action == "disable-stock-home":
+                disable_stock_home(adb, args.backup)
+                print("Stock home disabled and Hestia selected. Undo with enable-stock-home.")
+            elif args.action == "enable-stock-home":
+                enable_stock_home(adb, args.backup, args.assume_stock)
+                print("Stock home re-enabled; original HOME and screensaver verified.")
             elif args.action == "activate":
                 activate(adb, args.backup, args.screensaver)
                 print("Default HOME verified. Test the Home button, inputs, shortcuts and restart on the TV.")

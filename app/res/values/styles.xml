@@ -3,7 +3,7 @@
     <!-- The dark background already in the window: opening the home screen never flashes another color. -->
     <color name="home_background">#0E1420</color>
 
-    <style name="FreeMyTV.Home" parent="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen">
+    <style name="Hestia.Home" parent="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen">
         <item name="android:windowBackground">@color/home_background</item>
         <item name="android:windowContentOverlay">@null</item>
         <item name="android:windowShowWallpaper">false</item>

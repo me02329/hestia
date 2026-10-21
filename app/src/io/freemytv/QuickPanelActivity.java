@@ -45,6 +45,19 @@ public class QuickPanelActivity extends PanelActivity {
         }
     };
 
+    /** Home held down: System UI starts this panel; another action may have been chosen for it. */
+    @Override protected void onCreate(android.os.Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (isToggle(getIntent())) {
+            String action = RemoteKeys.get(this, RemoteKeys.LONG_HOME);
+            if (!action.equals(RemoteKeys.PANEL) && RemoteKeys.run(this, action)) finish();
+        }
+    }
+
+    private static boolean isToggle(Intent intent) {
+        return intent != null && "android.app.action.TOGGLE_NOTIFICATION_HANDLER_PANEL".equals(intent.getAction());
+    }
+
     @Override protected void onResume() {
         findMedia();
         super.onResume();

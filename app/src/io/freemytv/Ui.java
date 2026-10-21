@@ -2,10 +2,8 @@ package io.freemytv;
 
 import android.content.Context;
 import android.content.res.AssetManager;
-import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
-import android.graphics.RectF;
 import android.graphics.Typeface;
 
 import java.io.IOException;
@@ -32,10 +30,9 @@ final class Ui {
     static volatile boolean en = LANG_EN.equals(lang);
     /** 24-hour clock: always in French and Portuguese; in English when the TV is set to it. */
     static volatile boolean h24 = true;
-    static Typeface thin, light, displayMedium, displaySemibold, regular, medium, semibold;
+    static Typeface light, displaySemibold, regular, medium, semibold;
     private static boolean loaded;
     private static final Rect BOUNDS = new Rect();
-    private static final RectF OVAL = new RectF();
 
     static synchronized void init(Context c) {
         h24 = android.text.format.DateFormat.is24HourFormat(c);
@@ -43,9 +40,7 @@ final class Ui {
         if (loaded) return;
         loaded = true;
         AssetManager a = c.getAssets();
-        thin = font(a, 32, 200);
         light = font(a, 32, 300);
-        displayMedium = font(a, 32, 500);
         displaySemibold = font(a, 32, 600);
         regular = font(a, 14, 400);
         medium = font(a, 14, 500);
@@ -165,11 +160,6 @@ final class Ui {
                 : new SimpleDateFormat("HH:mm", Locale.ROOT).format(new Date(now));
     }
 
-    /** "5:21" (sunrise and sunset; in English with a 12-hour TV, "5:21 AM"). */
-    static String time(long at) {
-        return en && !h24 ? new SimpleDateFormat("h:mm a", Locale.US).format(new Date(at))
-                : new SimpleDateFormat("H:mm", Locale.ROOT).format(new Date(at));
-    }
 
     /** "jeudi 22 octobre", "domingo, 18 de outubro", "Sunday, October 18". */
     static String date(long now) {
@@ -214,15 +204,13 @@ final class Ui {
             {"OK hides or shows. Hidden apps stay installed. Back when done.",
                 "OK masque ou affiche. Les apps masquées restent installées. Retour pour terminer."},
             {"Hidden", "Masquée"}, {"Play", "Lecture"}, {"Pause", "Pause"}, {"Next", "Suivant"},
-            {"Previous", "Précédent"}, {"Open ", "Ouvrir "}, {"Search", "Rechercher"},
+            {"Previous", "Précédent"}, {"Open ", "Ouvrir "}, {"Remote buttons", "Touches de la télécommande"},
+            {"On the home screen; Home held down anywhere", "Sur l’accueil ; Home maintenu partout"},
+            {"TV button", "Touche TV"}, {"Settings button", "Touche Réglages"},
+            {"Home (press and hold)", "Home (appui long)"}, {"Quick panel", "Panneau rapide"}, {"Search", "Rechercher"},
             {"free of", "libres sur"}, {"Storage", "Stockage"},
         };
         for (String[] p : pairs) FR.put(p[0], p[1]);
     }
 
-    /** Spinning arc (work in progress). */
-    static void spinner(Canvas c, float cx, float cy, float r, float seconds, Paint stroke) {
-        OVAL.set(cx - r, cy - r, cx + r, cy + r);
-        c.drawArc(OVAL, (seconds * 360f) % 360f, 270f, false, stroke);
-    }
 }

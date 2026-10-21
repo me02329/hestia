@@ -112,3 +112,12 @@ Le retour utilisateur signale des éléments manquants en haut. La capture confi
   tests (`installPackageLI` tue Hestia ; l’app TV TCL laissée en arrière-plan, réglée sur AirPlay, reprend la main).
 - Dernière entrée de l’app TV TCL remise hors d’AirPlay (ouverture unique du tuner) : `persist.sys.livetvLatestInput`
   vaut désormais `com.tcl.channelplus/...` (TCL Channel ; pas d’antenne/chaînes mémorisées). Plus de lien AirPlay.
+
+## Hestia 1.10-safe — 22 octobre 2026
+
+- Réglages › Touches de la télécommande : touche TV, touche Réglages (sur l’accueil) et appui long Home (partout)
+  configurables (panneau rapide, TV en direct, une entrée HDMI, recherche, réglages, Hestia ou une app).
+  Ligne visible dans les réglages (capture) ; choix à valider à la télécommande.
+- Nettoyage : config sans TMDB ni devise (anciennes clés ignorées), APK renommé `Hestia.apk` (clé de signature
+  inchangée), météo réduite au temps actuel, code et icônes inutilisés retirés, `FeedText` testé sur JVM,
+  `tv_safe.py` gère `disable-stock-home` / `enable-stock-home` (tests simulés ; `status` vérifié sur la TV).

@@ -11,11 +11,8 @@ import org.json.JSONObject;
 import org.xmlpull.v1.XmlPullParser;
 
 import java.io.StringReader;
-import java.text.ParsePosition;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -53,7 +50,7 @@ final class News {
         {"ZATAZ", "https://www.zataz.com/feed/"},
     };
     private static final long EVERY = 30 * 60_000L, DAY = 24 * 3600_000L;
-    private static final int MIN_ITEMS = 6, MAX_ITEMS = 40, TITLE_MAX = 220;
+    private static final int MIN_ITEMS = 6, MAX_ITEMS = 40;
 
     private static News instance;
 
@@ -178,58 +175,12 @@ final class News {
                 }
             } else if (event == XmlPullParser.END_TAG && (p.getName().equals("item") || p.getName().equals("entry"))) {
                 inItem = false;
-                long at = parseDate(date);
-                String clean = clean(title);
-                if (at > 0 && !clean.isEmpty()) out.add(new Headline(clean, source, safeLink(link), at));
+                long at = FeedText.parseDate(date);
+                String clean = FeedText.clean(title);
+                if (at > 0 && !clean.isEmpty()) out.add(new Headline(clean, source, FeedText.safeLink(link), at));
             }
         }
         return out;
-    }
-
-    /** One line of plain text: no tags, entities or runs of spaces; bounded length. */
-    static String clean(String s) {
-        if (s == null) return "";
-        s = s.replaceAll("<[^>]*>", " ").replace("&amp;", "&").replace("&quot;", "\"").replace("&#039;", "'")
-                .replace("&#8217;", "’").replace("&#8216;", "‘").replace("&#8220;", "“").replace("&#8221;", "”")
-                .replace("&nbsp;", " ").replaceAll("\\s+", " ").trim();
-        return s.length() > TITLE_MAX ? s.substring(0, TITLE_MAX - 1) + "…" : s;
-    }
-
-    /** The link only if it's a plain https URL (no credentials, bounded length); otherwise "". */
-    static String safeLink(String s) {
-        if (s == null) return "";
-        s = s.trim();
-        if (s.length() > 600 || !s.startsWith("https://") || s.matches(".*[\\s\"<>].*")) return "";
-        try {
-            java.net.URL url = new java.net.URL(s);
-            if (url.getUserInfo() != null || url.getHost().isEmpty()) return "";
-            return s;
-        } catch (java.net.MalformedURLException e) {
-            return "";
-        }
-    }
-
-    /** "bleepingcomputer.com" (shown under the list so you know where a link goes). */
-    static String domain(String link) {
-        try {
-            String host = new java.net.URL(link).getHost();
-            return host.startsWith("www.") ? host.substring(4) : host;
-        } catch (java.net.MalformedURLException e) {
-            return "";
-        }
-    }
-
-    static long parseDate(String s) {
-        if (s == null) return 0;
-        s = s.trim();
-        for (String pattern : new String[] {"EEE, dd MMM yyyy HH:mm:ss Z", "EEE, d MMM yyyy HH:mm:ss Z",
-                "EEE, dd MMM yyyy HH:mm:ss zzz", "yyyy-MM-dd'T'HH:mm:ssXXX", "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"}) {
-            SimpleDateFormat f = new SimpleDateFormat(pattern, Locale.US);
-            ParsePosition pos = new ParsePosition(0);
-            Date d = f.parse(s, pos);
-            if (d != null && pos.getIndex() > 0) return d.getTime();
-        }
-        return 0;
     }
 
     private static List<Headline> parseCache(JSONArray list) {
@@ -237,7 +188,8 @@ final class News {
         for (int i = 0; i < list.length(); i++) {
             JSONObject o = list.optJSONObject(i);
             if (o != null) {
-                out.add(new Headline(clean(o.optString("t")), o.optString("s"), safeLink(o.optString("l")), o.optLong("at")));
+                String link = FeedText.safeLink(o.optString("l"));
+                out.add(new Headline(FeedText.clean(o.optString("t")), o.optString("s"), link, o.optLong("at")));
             }
         }
         return out;

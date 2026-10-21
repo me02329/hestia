@@ -151,7 +151,7 @@ public class NewsActivity extends Activity {
             for (int i = 0; i < items.size(); i++) drawItem(c, i);
             c.restore();
             if (focus < items.size() && !items.get(focus).link.isEmpty()) {
-                c.drawText(TextUtils.ellipsize("↗ " + News.domain(items.get(focus).link), footer, W - 2 * MARGIN,
+                c.drawText(TextUtils.ellipsize("↗ " + FeedText.domain(items.get(focus).link), footer, W - 2 * MARGIN,
                         TextUtils.TruncateAt.END).toString(), MARGIN, H - 46, footer);
             }
             c.restore();

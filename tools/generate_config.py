@@ -6,8 +6,9 @@ from pathlib import Path
 import re
 import sys
 
-DEFAULTS = dict(tmdb_key="", tmdb_region="FR", latitude="40.7128", longitude="-74.0060",
-                city="", language="auto", currency="EUR", temperature="C")
+DEFAULTS = dict(latitude="48.8566", longitude="2.3522", city="", language="auto", temperature="C")
+# Keys of earlier versions (TMDB picks, crypto prices): accepted and ignored so old config files still build.
+RETIRED = {"tmdb_key", "tmdb_region", "currency"}
 
 
 def generate(source):
@@ -19,6 +20,8 @@ def generate(source):
             continue
         key, sep, value = line.partition("=")
         key, value = key.strip(), value.strip()
+        if sep and key in RETIRED:
+            continue
         if not sep or key not in DEFAULTS or key in seen:
             raise ValueError("Unknown, duplicate, or malformed configuration key")
         if any(ord(c) < 32 for c in value):
@@ -29,8 +32,7 @@ def generate(source):
         number = float(values[key])
         if not math.isfinite(number) or not -limit <= number <= limit:
             raise ValueError("Invalid coordinate: " + key)
-    for key, pattern in (("tmdb_region", "[A-Z]{2}"), ("currency", "[A-Z]{3}"),
-                         ("language", "auto|en|pt"), ("temperature", "auto|C|F")):
+    for key, pattern in (("language", "auto|en|fr|pt"), ("temperature", "auto|C|F")):
         if not re.fullmatch(pattern, values[key]):
             raise ValueError("Invalid configuration value for: " + key)
     return ("package io.freemytv;\n\n// Generated; edit config.properties.\nfinal class Config {\n"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds FreeMyTV.apk without Gradle: aapt2 -> javac -> d8 -> zipalign -> apksigner.
+# Builds Hestia.apk without Gradle: aapt2 -> javac -> d8 -> zipalign -> apksigner.
 # Needs JDK 17, build-tools 34.0.0 and platform android-34. See SAFE-DEPLOYMENT.md.
 set -euo pipefail
 umask 077
@@ -33,7 +33,7 @@ esac
 # --- Settings: config.properties -> Config.java
 if [ ! -f config.properties ]; then
   cp config.example.properties config.properties
-  echo "Created config.properties: add your TMDB key and your city there (optional), then build again."
+  echo "Created config.properties: set your city there (optional), then build again."
 fi
 mkdir -p out/gen/io/freemytv
 python3 tools/generate_config.py config.properties out/gen/io/freemytv/Config.java
@@ -53,6 +53,7 @@ mkdir -p out/classes
 "$BT/zipalign" -f -p 4 out/base.apk out/aligned.apk
 
 # --- Local signing identity: random password, private files, never checked into git.
+# The signing key keeps its original name: a different key can't update the installed app.
 if [ ! -f freemytv.keystore ] && [ ! -f freemytv.keystore.pass ]; then
   python3 -c 'import secrets; from pathlib import Path; Path("freemytv.keystore.pass").write_text(secrets.token_urlsafe(48))'
   "$KEYTOOL" -genkeypair -keystore freemytv.keystore -alias freemytv -keyalg RSA -keysize 3072 -validity 10000 \
@@ -62,6 +63,6 @@ fi
 chmod 600 freemytv.keystore freemytv.keystore.pass config.properties
 "$BT/apksigner" sign --ks freemytv.keystore --ks-pass file:freemytv.keystore.pass --out out/signed.apk out/aligned.apk
 "$BT/apksigner" verify --verbose out/signed.apk
-mv out/signed.apk FreeMyTV.apk
-sha256sum FreeMyTV.apk > FreeMyTV.apk.sha256
-echo "Built FreeMyTV.apk. Installation and activation are separate: see SAFE-DEPLOYMENT.md."
+mv out/signed.apk Hestia.apk
+sha256sum Hestia.apk > Hestia.apk.sha256
+echo "Built Hestia.apk. Installation and activation are separate: see SAFE-DEPLOYMENT.md."

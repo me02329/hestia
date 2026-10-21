@@ -47,6 +47,19 @@ class AppPolicyTests(unittest.TestCase):
                                     check=True, capture_output=True, text=True)
             self.assertIn("checks passed", result.stdout)
 
+    def test_feed_text_with_real_jvm(self):
+        local = Path.home() / ".local/share/free-my-tv/jdk17"
+        java_home = Path(os.environ.get("JAVA_HOME", str(local)))
+        javac = str(java_home / "bin/javac") if (java_home / "bin/javac").exists() else shutil.which("javac")
+        java = str(java_home / "bin/java") if (java_home / "bin/java").exists() else shutil.which("java")
+        self.assertTrue(javac and java, "JDK required for feed text tests")
+        with tempfile.TemporaryDirectory() as directory:
+            subprocess.run([javac, "-d", directory, str(ROOT / "app/src/io/freemytv/FeedText.java"),
+                            str(ROOT / "tests/java/FeedTextTest.java")], check=True, capture_output=True, text=True)
+            result = subprocess.run([java, "-cp", directory, "io.freemytv.FeedTextTest"],
+                                    check=True, capture_output=True, text=True)
+            self.assertIn("checks passed", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

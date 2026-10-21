@@ -161,6 +161,10 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
         data.addListener(this);
         photos.addListener(this);
         newsOn = News.enabled(getContext());
+        if (!newsOn && newsFocus) {   // headlines turned off in the settings while focused
+            newsFocus = false;
+            retarget(true);
+        }
         if (newsOn) {
             news.addListener(this);
             onNews();
@@ -663,13 +667,15 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
             // The remote's Settings button (sent as NOTIFICATION on this TCL): the quick panel, as Google TV did.
             case KeyEvent.KEYCODE_NOTIFICATION:
             case KeyEvent.KEYCODE_SETTINGS:
-                if (!down) activity.startActivity(new android.content.Intent(activity, QuickPanelActivity.class));
+                if (!down && !RemoteKeys.run(activity, RemoteKeys.get(activity, RemoteKeys.SETTINGS))) {
+                    RemoteKeys.run(activity, RemoteKeys.PANEL);
+                }
                 return true;
             // The TV button: this TCL remote sends its own key code (4001); GUIDE/TV on other remotes.
             case KEYCODE_TCL_TV:
             case KeyEvent.KEYCODE_GUIDE:
             case KeyEvent.KEYCODE_TV:
-                if (!down) openLiveTv();
+                if (!down && !RemoteKeys.run(activity, RemoteKeys.get(activity, RemoteKeys.TV))) openLiveTv();
                 return true;
             case KeyEvent.KEYCODE_BACK:
                 if (down) {

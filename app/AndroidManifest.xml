@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="io.freemytv"
-    android:versionCode="10"
-    android:versionName="1.9-safe">
+    android:versionCode="11"
+    android:versionName="1.10-safe">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -70,7 +70,7 @@
             android:excludeFromRecents="true"
             android:screenOrientation="landscape"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density|fontScale|locale|layoutDirection"
-            android:theme="@style/FreeMyTV.Home">
+            android:theme="@style/Hestia.Home">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
@@ -92,7 +92,7 @@
             android:excludeFromRecents="true"
             android:screenOrientation="landscape"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density|fontScale|locale|layoutDirection"
-            android:theme="@style/FreeMyTV.Home">
+            android:theme="@style/Hestia.Home">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.HOME" />
@@ -109,7 +109,7 @@
             android:excludeFromRecents="true"
             android:screenOrientation="landscape"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density|fontScale|locale|layoutDirection"
-            android:theme="@style/FreeMyTV.Home" />
+            android:theme="@style/Hestia.Home" />
 
         <!-- Quick panel: the remote's Settings button on the home screen, and a long press on Home anywhere
              (System UI looks for TOGGLE_NOTIFICATION_HANDLER_PANEL, which Google TV's launcher used to handle). -->
@@ -129,6 +129,17 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+        <!-- Settings › Remote buttons: what the TV / Settings buttons and Home held down open. -->
+        <activity
+            android:name=".RemoteKeysActivity"
+            android:process=":home"
+            android:exported="false"
+            android:label="Hestia"
+            android:excludeFromRecents="true"
+            android:screenOrientation="landscape"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density|fontScale|locale|layoutDirection"
+            android:theme="@style/Hestia.Panel" />
 
         <!-- Long press OK on an app card. -->
         <activity

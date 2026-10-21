@@ -6,12 +6,14 @@ Read README.md and SAFE-DEPLOYMENT.md before deployment.
 - The user authorized local hardening and build/testing. TV deployment is a separate next step.
 - Do not reintroduce in-app ADB, package disabling, boot-time enforcement or WRITE_SECURE_SETTINGS.
 - In-app code never disables packages. On the owner's explicit decision (2026-10-21) the TV runs with
-  `launcherx` and `setupwraith` disabled by hand over ADB (see README/TRIAL.md); don't disable anything else.
+  `launcherx` and `setupwraith` disabled; only tools/tv_safe.py (disable/enable-stock-home, STOCK list) may
+  change them. Never disable anything else (AirPlay, TCL services…) without the owner asking.
 - Never claim automatic restoration when ADB is unavailable; the app offers recovery navigation only.
 - Use tools/tv_safe.py over the user's already paired ADB transport. Require an explicit serial.
 - Snapshot before switching; preserve the immutable snapshot and operation journal. Never infer an original HOME
   or bypass device/firmware/user identity checks. No legacy `cmd role get-role-holders` dependency.
-- Do not execute any TV mutation while reviewing/building this project.
+- Do not execute any TV mutation while reviewing/building this project. Installing an update kills Hestia for a
+  moment: whatever is under it (e.g. TCL's TV app) comes up until Home is pressed.
 - Do not commit config.properties, signing keys/passwords, device backups or configured APKs.
 - Build with JDK 17, platform android-34 and build-tools 34.0.0. Minimum Android for this branch is 13.
 - Validate with `python3 -m unittest discover -s tests -v`, `./build.sh` and `git diff --check`.

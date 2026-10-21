@@ -109,11 +109,11 @@ public class SettingsActivity extends Activity {
     static final class SettingsView extends View implements Choreographer.FrameCallback {
         private static final float W = 1920, H = 1080, MARGIN = 120;
         private static final int MAIN = 0, FAVORITES = 1, HOME_CHOICE = 2, HIDDEN = 3;
-        private static final int ROW_FAVORITES = 0, ROW_HIDDEN = 1, ROW_SORT = 2, ROW_LANGUAGE = 3, ROW_NEWS = 4,
-                ROW_SCREENSAVER = 5, ROW_HOME = 6, ROW_TV = 7, ROWS = 8;
+        private static final int ROW_FAVORITES = 0, ROW_HIDDEN = 1, ROW_SORT = 2, ROW_KEYS = 3, ROW_LANGUAGE = 4,
+                ROW_NEWS = 5, ROW_SCREENSAVER = 6, ROW_HOME = 7, ROW_TV = 8, ROWS = 9;
         private static final String[] SORTS = {HomeApps.SORT_NAME, HomeApps.SORT_USAGE, HomeApps.SORT_RECENT};
         private static final String[] LANGUAGES = {Ui.AUTO, Ui.LANG_FR, Ui.LANG_EN, Ui.LANG_PT};
-        private static final float LIST_X = 920, LIST_R = W - MARGIN, LIST_TOP = 230, ROW_H = 84, ROW_GAP = 10;
+        private static final float LIST_X = 920, LIST_R = W - MARGIN, LIST_TOP = 210, ROW_H = 80, ROW_GAP = 9;
         private static final float GRID_COLS = 5, CARD_W = 300, CARD_H = 169, CARD_GAP = 36, GRID_TOP = 300, GRID_STEP = 250;
         private static final int ACCENT = 0xFFFFB347, INK = 0xFF15161A;
         private static final ExecutorService LOADER = Executors.newSingleThreadExecutor();
@@ -278,11 +278,12 @@ public class SettingsActivity extends Activity {
             if (screen == MAIN) {
                 c.drawText(Ui.tr("Ajustes", "Settings"), LIST_X, LIST_TOP - 50, heading);
                 String[] labels = {Ui.tr("Apps favoritos", "Favorite apps"), Ui.tr("Apps ocultos", "Hidden apps"),
-                        Ui.tr("Ordem de Todos os apps", "Sort all apps"), Ui.tr("Idioma", "Language"),
+                        Ui.tr("Ordem de Todos os apps", "Sort all apps"), Ui.tr("Botões do controle", "Remote buttons"),
+                        Ui.tr("Idioma", "Language"),
                         Ui.tr("Notícias de cibersegurança", "Cyber news"),
                         Ui.tr("Tela de descanso", "Screensaver"), Ui.tr("Tela inicial padrão", "Default home screen"),
                         Ui.tr("Ajustes da TV", "TV settings")};
-                String[] values = {favorites.size() + " apps", String.valueOf(hidden.size()), sortName(),
+                String[] values = {favorites.size() + " apps", String.valueOf(hidden.size()), sortName(), "",
                         languageName(), newsOn ? Ui.tr("Ligado", "On") : Ui.tr("Desligado", "Off"),
                         Ui.tr("Ver agora", "Preview"), homeIsOurs ? "Hestia" : Ui.tr("Outra", "Other"), ""};
                 for (int i = 0; i < labels.length; i++) drawRow(c, i, labels[i], values[i], null);
@@ -518,6 +519,8 @@ public class SettingsActivity extends Activity {
                 go(FAVORITES, 0);
             } else if (focus == ROW_HIDDEN) {
                 go(HIDDEN, 0);
+            } else if (focus == ROW_KEYS) {
+                activity.startActivity(new Intent(activity, RemoteKeysActivity.class));
             } else if (focus == ROW_SORT) {
                 int i = java.util.Arrays.asList(SORTS).indexOf(HomeApps.sortMode(c));
                 HomeApps.setSortMode(c, SORTS[(i + 1) % SORTS.length]);
