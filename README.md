@@ -60,3 +60,12 @@ l’économiseur d’origine. Détails dans [SAFE-DEPLOYMENT.md](SAFE-DEPLOYMENT
 Les tests simulent la TV (bascule/restauration) et vérifient les règles réseau sur une JVM, sans Internet.
 Une compilation réussie ne remplace pas un essai sur la TV. Le watchdog ne couvre pas les ANR, crashs natifs ou
 arrêts forcés.
+
+## Licences
+
+- **Code :** MIT, voir [LICENSE](LICENSE) (Hestia, dérivé de Free My TV).
+- **Police Inter :** SIL Open Font License, `app/assets/fonts/OFL.txt`.
+- **Icônes Material Symbols :** Apache 2.0, `app/assets/symbols/LICENSE-material-symbols.txt`.
+- **Emblème Hestia** (`branding/`, icône et bannière dérivées) : tous droits réservés, hors licence MIT.
+- Les photos (Bing), la météo (Open-Meteo) et les actus (flux RSS) sont téléchargées par la TV, jamais incluses ici ;
+  elles restent la propriété de leurs auteurs.
