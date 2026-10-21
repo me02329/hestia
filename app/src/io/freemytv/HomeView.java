@@ -98,6 +98,7 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
     private final Paint edgeMask = new Paint(), pill = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint pillText, sourcePaint, brandPaint, hintPaint;
     private final Paint logoHalo = new Paint();
+    private final Paint newsScrim = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Drawable logo;
     private TextPaint headlinePaint;
     private Paint clockPaint, datePaint, tempPaint, rowPaint;
@@ -320,6 +321,10 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
         brandPaint.setTextAlign(Paint.Align.CENTER);
         brandPaint.setLetterSpacing(0.35f);
         brandPaint.setShadowLayer(12, 0, 2, 0xCC000000);
+        // Soft dark band behind the headline: white text stays readable on bright photos.
+        newsScrim.setShader(new LinearGradient(0, 0, 1750, 0, new int[] {0xA6000000, 0x73000000, 0x00000000},
+                new float[] {0, 0.6f, 1}, Shader.TileMode.CLAMP));
+        newsScrim.setMaskFilter(new android.graphics.BlurMaskFilter(48, android.graphics.BlurMaskFilter.Blur.NORMAL));
         logoHalo.setShader(new RadialGradient(W / 2, LOGO_TOP + LOGO_H / 2, LOGO_H, 0x8C000000, 0x00000000,
                 Shader.TileMode.CLAMP));
         edgeMask.setXfermode(new android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DST_IN));
@@ -412,6 +417,8 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
     /** The current headline sliding up over the previous one. */
     private void drawHeadline(Canvas c, float alpha) {
         if (!newsOn || headlines.isEmpty()) return;
+        newsScrim.setAlpha(Math.round(255 * alpha));
+        c.drawRoundRect(-60, 262, 1750, 404, 60, 60, newsScrim);
         float t = Ui.clamp((SystemClock.uptimeMillis() - headlineAt) / (float) HEADLINE_MS);
         t = t * t * (3 - 2 * t);
         String label = "CYBER";
