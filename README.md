@@ -13,7 +13,7 @@ désactivations automatiques, recommandations TMDB et cours crypto retirés.
 - **Fond :** photo du jour (archive Bing, sans clé), nouvelle toutes les 2 minutes.
 - **En-tête :** heure et date, emblème Hestia, météo Open-Meteo de la ville configurée.
 - **Actus cyber :** titres des dernières 24 h (The Hacker News, BleepingComputer, SecurityWeek, CERT-FR, ZATAZ),
-  un toutes les 8 s, désactivable.
+  un toutes les 12 s, désactivable ; ↑ puis OK ouvre la liste et les articles dans le navigateur.
 - **Rangées :** apps favorites (choisies dans les réglages), TV en direct et entrées HDMI, toutes les apps.
 - **Économiseur :** diaporama des photos du jour, 45 s par photo, avec heure, météo et un titre cyber.
 - **Réglages :** apps favorites, apps masquées, tri de Toutes les apps, langue (auto/français/anglais/portugais),
