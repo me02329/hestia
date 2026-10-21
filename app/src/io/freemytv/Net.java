@@ -33,7 +33,7 @@ final class Net {
         c.setInstanceFollowRedirects(false);
         c.setConnectTimeout(8000);
         c.setReadTimeout(8000);
-        c.setRequestProperty("User-Agent", "Hestia/1.6-safe");
+        c.setRequestProperty("User-Agent", "Hestia/1.7-safe");
         return c;
     }
 

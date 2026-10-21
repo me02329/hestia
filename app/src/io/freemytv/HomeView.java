@@ -44,6 +44,8 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
     private static final float CARD_W = 320, CARD_H = 180, GAP = 36, RADIUS = 18, FOCUS_GROW = 0.1f;
     private static final long PHOTO_EVERY = 120_000, FADE_MS = 1_500, HEADLINE_EVERY = 12_000, HEADLINE_MS = 600;
     private static final float LOGO_TOP = 44, LOGO_H = 132;
+    /** The TV button of TCL remotes (scan 0x0c005b mapped by TCL's key layout; not an Android KEYCODE_ constant). */
+    private static final int KEYCODE_TCL_TV = 4001;
     /** Cards fade out over this width at the screen edges instead of being cut. */
     private static final float EDGE_FADE = 160;
 
@@ -69,7 +71,7 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
     private List<News.Headline> headlines = new ArrayList<>();
     private int headline;
     private long headlineAt;
-    private boolean newsOn, newsFocus;
+    private boolean newsOn, newsFocus, okLong;
     private final Spring newsPop = new Spring(0.28f, 0.85f, 0);
     private final Click click;
     private final TvInputManager tvInputs;
@@ -211,6 +213,8 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
 
     private static List<HomeApps.Item> inputsRow(Context c) {
         List<HomeApps.Item> list = HomeApps.allInputs(c);
+        HomeApps.Item store = HomeApps.playStore(c);
+        if (store != null) list.add(store);
         list.addAll(HomeApps.settingsShortcuts());
         return list;
     }
@@ -632,13 +636,30 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
             case KeyEvent.KEYCODE_ENTER:
             case KeyEvent.KEYCODE_NUMPAD_ENTER:
                 // Opens on release, and only if the press happened here: the release of an OK pressed inside another
-                // app opens nothing.
+                // app opens nothing. Held down (Android's long-press timeout): the app's menu instead.
                 if (down) {
-                    if (e.getRepeatCount() == 0) okDown = true;
+                    if (e.getRepeatCount() == 0) {
+                        okDown = true;
+                        okLong = false;
+                    } else if (okDown && !okLong && e.isLongPress()) {
+                        okLong = true;
+                        menu();
+                    }
                 } else {
-                    if (okDown && !e.isCanceled()) open();
+                    if (okDown && !okLong && !e.isCanceled()) open();
                     okDown = false;
                 }
+                return true;
+            // The remote's Settings button (sent as NOTIFICATION on this TCL): the quick panel, as Google TV did.
+            case KeyEvent.KEYCODE_NOTIFICATION:
+            case KeyEvent.KEYCODE_SETTINGS:
+                if (!down) activity.startActivity(new android.content.Intent(activity, QuickPanelActivity.class));
+                return true;
+            // The TV button: this TCL remote sends its own key code (4001); GUIDE/TV on other remotes.
+            case KEYCODE_TCL_TV:
+            case KeyEvent.KEYCODE_GUIDE:
+            case KeyEvent.KEYCODE_TV:
+                if (!down) openLiveTv();
                 return true;
             case KeyEvent.KEYCODE_BACK:
                 if (down) {
@@ -696,6 +717,25 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
         }
         click.move();
         retarget(false);
+    }
+
+    /** Long press OK on an app card: its menu (favorites, hide, info, Play Store, uninstall). */
+    private void menu() {
+        HomeApps.Item it = newsFocus ? null : focused();
+        if (it == null || it.kind != HomeApps.APP) return;
+        click.open();
+        activity.startActivity(new android.content.Intent(activity, AppMenuActivity.class)
+                .putExtra(AppMenuActivity.EXTRA_PACKAGE, it.pkg));
+    }
+
+    private void openLiveTv() {
+        android.content.Intent live = HomeApps.liveTv(activity);
+        if (live == null) return;
+        try {
+            activity.startActivity(live.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK));
+        } catch (android.content.ActivityNotFoundException | SecurityException e) {
+            AppLog.w("live TV: " + e.getMessage());
+        }
     }
 
     private void open() {

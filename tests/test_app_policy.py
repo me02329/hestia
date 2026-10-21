@@ -14,7 +14,9 @@ class AppPolicyTests(unittest.TestCase):
     def test_manifest_has_no_boot_jobs_or_privileged_permissions(self):
         root = ET.parse(ROOT / "app/AndroidManifest.xml").getroot()
         self.assertEqual({p.get(ANDROID + "name") for p in root.findall("uses-permission")},
-                         {"android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE"})
+                         {"android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE",
+                          # User-confirmed uninstall from the app menu (Android shows its own dialog).
+                          "android.permission.REQUEST_DELETE_PACKAGES"})
         app = root.find("application")
         self.assertEqual(app.get(ANDROID + "allowBackup"), "false")
         self.assertEqual(app.get(ANDROID + "usesCleartextTraffic"), "false")

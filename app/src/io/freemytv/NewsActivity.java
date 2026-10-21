@@ -207,7 +207,7 @@ public class NewsActivity extends Activity {
             boolean moving = scroll.step(dt);
             for (Spring s : pop) moving |= s.step(dt);
             invalidate();
-            if (moving && isAttachedToWindow()) {
+            if (moving) {
                 framePending = true;
                 Choreographer.getInstance().postFrameCallback(this);
             }

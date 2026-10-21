@@ -17,6 +17,7 @@ Read README.md and SAFE-DEPLOYMENT.md before deployment.
 - Validate with `python3 -m unittest discover -s tests -v`, `./build.sh` and `git diff --check`.
 - Network requests use Net.java: fixed HTTPS origins, no redirects, bounded responses and safe error messages.
   Current sources: Open-Meteo, Bing photo archive, cyber RSS feeds (News.java). No API keys.
-- UI remains English/Portuguese, drawn on Canvas. Preserve D-pad navigation and visual previews.
+- UI in French, English or Portuguese (owner's request, 2026-10-22): English/Portuguese at each Ui.tr() call,
+  French in Ui's FR table keyed by the English text. Drawn on Canvas. Preserve D-pad navigation and visual previews.
 - Report the difference between simulated tests, successful builds and actual TV validation.
 - The upstream marketing website (docs/) was removed from this fork; don't reintroduce or publish it.

@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="io.freemytv"
-    android:versionCode="7"
-    android:versionName="1.6-safe">
+    android:versionCode="8"
+    android:versionName="1.7-safe">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Uninstall from the app menu: Android still shows its own confirmation. -->
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
 
     <!-- Android 11+: without this list the app can't "see" the other apps (getLeanbackLaunchIntentForPackage
          returns null). The shelf and streaming apps, the live TV apps and, through the <intent>, every TV app
@@ -26,6 +28,7 @@
         <package android:name="com.peacocktv.peacockandroid" />
         <package android:name="com.globo.globotv" />
         <package android:name="com.spotify.tv.android" />
+        <package android:name="com.android.vending" />
         <package android:name="com.tcl.tv" />
         <package android:name="com.google.android.tv" />
         <package android:name="com.mediatek.wwtv.tvcenter" />
@@ -107,6 +110,36 @@
             android:screenOrientation="landscape"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density|fontScale|locale|layoutDirection"
             android:theme="@style/FreeMyTV.Home" />
+
+        <!-- Quick panel: the remote's Settings button on the home screen, and a long press on Home anywhere
+             (System UI looks for TOGGLE_NOTIFICATION_HANDLER_PANEL, which Google TV's launcher used to handle). -->
+        <activity
+            android:name=".QuickPanelActivity"
+            android:process=":home"
+            android:exported="true"
+            android:label="Hestia"
+            android:launchMode="singleTask"
+            android:taskAffinity="io.freemytv.panel"
+            android:excludeFromRecents="true"
+            android:screenOrientation="landscape"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density|fontScale|locale|layoutDirection"
+            android:theme="@style/Hestia.Panel">
+            <intent-filter>
+                <action android:name="android.app.action.TOGGLE_NOTIFICATION_HANDLER_PANEL" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <!-- Long press OK on an app card. -->
+        <activity
+            android:name=".AppMenuActivity"
+            android:process=":home"
+            android:exported="false"
+            android:label="Hestia"
+            android:excludeFromRecents="true"
+            android:screenOrientation="landscape"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density|fontScale|locale|layoutDirection"
+            android:theme="@style/Hestia.Panel" />
 
         <service
             android:name=".Screensaver"

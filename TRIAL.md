@@ -73,3 +73,15 @@ Le retour utilisateur signale des éléments manquants en haut. La capture confi
 - Actus : rotation 12 s (en pause quand le titre a le focus). ↑ depuis les apps sélectionne le titre ; OK ouvre la
   liste des actus (NewsActivity) ; OK sur une actu ouvre son lien https dans le navigateur de la TV (TV Bro).
   Vérifié sur la TV : focus, liste de 40 titres, ouverture d’un article.
+
+## Hestia 1.7-safe — 22 octobre 2026
+
+- Télécommande, diagnostiquée par capture `getevent` + logcat : Settings arrive en `KEYCODE_NOTIFICATION`,
+  la touche TV en code TCL 4001 (le `KEYCODE_GUIDE` réinjecté par TCL n’atteint pas les apps), l’appui long sur
+  Home déclenche `TOGGLE_NOTIFICATION_HANDLER_PANEL` que gérait le launcher Google TV.
+- Ajouts : panneau rapide Hestia (sources, image, son, réseau, accessoires, réglages) sur Settings et appui long
+  Home ; touche TV → TV en direct ; appui long OK → menu d’app (favoris, déplacer, masquer, infos, Play Store,
+  désinstaller avec confirmation Android) ; tri de Toutes les apps, apps masquées, carte Play Store.
+- Langue : Auto / Français / English / Português dans les réglages ; heure 24 h, date et météo en français.
+- Vérifié sur la TV par touches simulées : Settings, appui long OK, touche TV (ouvre `com.tcl.tv`).
+  L’appui long réel sur Home reste à confirmer à la télécommande.

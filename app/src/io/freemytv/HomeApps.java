@@ -6,6 +6,7 @@ import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
@@ -113,7 +114,7 @@ final class HomeApps {
         return items;
     }
 
-    private static Item appItem(Context c, String pkg) {
+    static Item appItem(Context c, String pkg) {
         PackageManager pm = c.getPackageManager();
         if (launchIntent(pm, pkg) == null) return null;
         Item it = new Item();
@@ -230,12 +231,54 @@ final class HomeApps {
         return items;
     }
 
-    /** Apps that are not favorites (the last row of the home screen). */
+    /** Apps that are neither favorites nor hidden (the last row of the home screen), in the chosen order. */
     static List<Item> others(Context c) {
-        Set<String> favorites = new HashSet<>(favorites(c));
+        Set<String> skip = new HashSet<>(favorites(c));
+        skip.addAll(hidden(c));
         List<Item> items = new ArrayList<>();
-        for (Item it : allApps(c)) if (!favorites.contains(it.pkg)) items.add(it);
+        for (Item it : allApps(c)) if (!skip.contains(it.pkg)) items.add(it);
+        String sort = sortMode(c);
+        if (!sort.equals(SORT_NAME)) {
+            SharedPreferences usage = c.getSharedPreferences("usage", Context.MODE_PRIVATE);
+            String suffix = sort.equals(SORT_RECENT) ? ":at" : ":n";
+            // Stable sort: apps never opened keep their alphabetical order, after the others.
+            Collections.sort(items, (a, b) -> Long.compare(usage.getLong(b.pkg + suffix, 0), usage.getLong(a.pkg + suffix, 0)));
+        }
         return items;
+    }
+
+    // MARK: - Hidden apps, launch counts and sort order (all in this app's preferences)
+
+    static final String SORT_NAME = "name", SORT_USAGE = "usage", SORT_RECENT = "recent";
+
+    static String sortMode(Context c) {
+        return c.getSharedPreferences("home", Context.MODE_PRIVATE).getString("sort", SORT_NAME);
+    }
+
+    static void setSortMode(Context c, String mode) {
+        c.getSharedPreferences("home", Context.MODE_PRIVATE).edit().putString("sort", mode).apply();
+    }
+
+    static Set<String> hidden(Context c) {
+        return new HashSet<>(c.getSharedPreferences("home", Context.MODE_PRIVATE).getStringSet("hidden", new HashSet<>()));
+    }
+
+    static void setHidden(Context c, String pkg, boolean hide) {
+        Set<String> set = hidden(c);
+        if (hide) set.add(pkg); else set.remove(pkg);
+        c.getSharedPreferences("home", Context.MODE_PRIVATE).edit().putStringSet("hidden", set).apply();
+    }
+
+    /** Counted by Hestia itself when it opens an app (no usage-stats permission). */
+    static void recordLaunch(Context c, String pkg) {
+        SharedPreferences usage = c.getSharedPreferences("usage", Context.MODE_PRIVATE);
+        usage.edit().putLong(pkg + ":n", usage.getLong(pkg + ":n", 0) + 1)
+                .putLong(pkg + ":at", System.currentTimeMillis()).apply();
+    }
+
+    /** The Play Store as a card of the TV row, when installed. */
+    static Item playStore(Context c) {
+        return appItem(c, "com.android.vending");
     }
 
     /** Opens the item with the system zoom transition growing out of the card (the app starts opening right away). */
@@ -243,6 +286,7 @@ final class HomeApps {
         Intent intent;
         switch (it.kind) {
             case APP:
+                recordLaunch(a, it.pkg);
                 intent = launchIntent(a.getPackageManager(), it.pkg);
                 if (intent != null) intent.addFlags(Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
                 break;

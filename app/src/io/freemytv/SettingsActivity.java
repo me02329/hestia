@@ -108,9 +108,12 @@ public class SettingsActivity extends Activity {
      */
     static final class SettingsView extends View implements Choreographer.FrameCallback {
         private static final float W = 1920, H = 1080, MARGIN = 120;
-        private static final int MAIN = 0, FAVORITES = 1, HOME_CHOICE = 2;
-        private static final int ROW_FAVORITES = 0, ROW_NEWS = 1, ROW_SCREENSAVER = 2, ROW_HOME = 3, ROW_TV = 4;
-        private static final float LIST_X = 920, LIST_R = W - MARGIN, LIST_TOP = 250, ROW_H = 104, ROW_GAP = 14;
+        private static final int MAIN = 0, FAVORITES = 1, HOME_CHOICE = 2, HIDDEN = 3;
+        private static final int ROW_FAVORITES = 0, ROW_HIDDEN = 1, ROW_SORT = 2, ROW_LANGUAGE = 3, ROW_NEWS = 4,
+                ROW_SCREENSAVER = 5, ROW_HOME = 6, ROW_TV = 7, ROWS = 8;
+        private static final String[] SORTS = {HomeApps.SORT_NAME, HomeApps.SORT_USAGE, HomeApps.SORT_RECENT};
+        private static final String[] LANGUAGES = {Ui.AUTO, Ui.LANG_FR, Ui.LANG_EN, Ui.LANG_PT};
+        private static final float LIST_X = 920, LIST_R = W - MARGIN, LIST_TOP = 230, ROW_H = 84, ROW_GAP = 10;
         private static final float GRID_COLS = 5, CARD_W = 300, CARD_H = 169, CARD_GAP = 36, GRID_TOP = 300, GRID_STEP = 250;
         private static final int ACCENT = 0xFFFFB347, INK = 0xFF15161A;
         private static final ExecutorService LOADER = Executors.newSingleThreadExecutor();
@@ -130,6 +133,7 @@ public class SettingsActivity extends Activity {
         private final Drawable logo;
         private List<HomeApps.Item> apps = new ArrayList<>();
         private List<String> favorites = new ArrayList<>();
+        private java.util.Set<String> hidden = new java.util.HashSet<>();
         private boolean newsOn, homeIsOurs;
 
         private final Paint image = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.DITHER_FLAG);
@@ -183,6 +187,7 @@ public class SettingsActivity extends Activity {
         private void refreshState() {
             Context c = getContext();
             favorites = HomeApps.favorites(c);
+            hidden = HomeApps.hidden(c);
             newsOn = News.enabled(c);
             homeIsOurs = HomeMode.isDefault(c);
             invalidate();
@@ -215,9 +220,10 @@ public class SettingsActivity extends Activity {
 
         private int count() {
             switch (screen) {
-                case FAVORITES: return apps.size();
+                case FAVORITES:
+                case HIDDEN: return apps.size();
                 case HOME_CHOICE: return 3;
-                default: return 5;
+                default: return ROWS;
             }
         }
 
@@ -230,7 +236,7 @@ public class SettingsActivity extends Activity {
             screen = to;
             focus = focusOn;
             resetPop(count());
-            if (to == FAVORITES) {
+            if (to == FAVORITES || to == HIDDEN) {
                 apps = new ArrayList<>();
                 gridScroll.snap(0);
                 loadApps();
@@ -249,7 +255,7 @@ public class SettingsActivity extends Activity {
             c.scale(k, k);
             if (photo != null) c.drawBitmap(photo, 0, 0, image); else c.drawColor(0xFF0E1420);
             c.drawRect(0, 0, W, H, scrim);
-            if (screen == FAVORITES) drawFavorites(c); else drawMain(c);
+            if (screen == FAVORITES || screen == HIDDEN) drawFavorites(c); else drawMain(c);
             c.restore();
         }
 
@@ -269,10 +275,13 @@ public class SettingsActivity extends Activity {
 
             if (screen == MAIN) {
                 c.drawText(Ui.tr("Ajustes", "Settings"), LIST_X, LIST_TOP - 50, heading);
-                String[] labels = {Ui.tr("Apps favoritos", "Favorite apps"), Ui.tr("Notícias de cibersegurança", "Cyber news"),
+                String[] labels = {Ui.tr("Apps favoritos", "Favorite apps"), Ui.tr("Apps ocultos", "Hidden apps"),
+                        Ui.tr("Ordem de Todos os apps", "Sort all apps"), Ui.tr("Idioma", "Language"),
+                        Ui.tr("Notícias de cibersegurança", "Cyber news"),
                         Ui.tr("Tela de descanso", "Screensaver"), Ui.tr("Tela inicial padrão", "Default home screen"),
                         Ui.tr("Ajustes da TV", "TV settings")};
-                String[] values = {favorites.size() + " apps", newsOn ? Ui.tr("Ligado", "On") : Ui.tr("Desligado", "Off"),
+                String[] values = {favorites.size() + " apps", String.valueOf(hidden.size()), sortName(),
+                        languageName(), newsOn ? Ui.tr("Ligado", "On") : Ui.tr("Desligado", "Off"),
                         Ui.tr("Ver agora", "Preview"), homeIsOurs ? "Hestia" : Ui.tr("Outra", "Other"), ""};
                 for (int i = 0; i < labels.length; i++) drawRow(c, i, labels[i], values[i], null);
             } else {
@@ -285,6 +294,23 @@ public class SettingsActivity extends Activity {
                 c.drawText(TextUtils.ellipsize(Ui.tr("Restaurar pelo computador: tools/tv_safe.py restore",
                         "Restore from your computer: tools/tv_safe.py restore"), hint, LIST_R - LIST_X, TextUtils.TruncateAt.END)
                         .toString(), LIST_X, LIST_TOP + 3 * (ROW_H + ROW_GAP) + 50, hint);
+            }
+        }
+
+        private String sortName() {
+            switch (HomeApps.sortMode(getContext())) {
+                case HomeApps.SORT_USAGE: return Ui.tr("Mais usados", "Most used");
+                case HomeApps.SORT_RECENT: return Ui.tr("Usados recentemente", "Recently used");
+                default: return Ui.tr("A–Z", "A–Z");
+            }
+        }
+
+        private String languageName() {
+            switch (Ui.choice(getContext()).toLowerCase(java.util.Locale.ROOT)) {
+                case "fr": return "Français";
+                case "en": return "English";
+                case "pt": return "Português";
+                default: return Ui.tr("Automático", "Automatic");
             }
         }
 
@@ -301,11 +327,11 @@ public class SettingsActivity extends Activity {
             fill.setColor(blend(0x33FFFFFF, 0xFFFFFFFF, f));
             c.drawRoundRect(rect, 22, 22, fill);
             rowLabel.setColor(blend(0xFFFFFFFF, INK, f));
-            float base = sub == null ? cy + Ui.halfCap(rowLabel) : cy - 4;
+            float base = sub == null ? cy + Ui.halfCap(rowLabel) : cy - 6;
             c.drawText(label, rect.left + 36, base, rowLabel);
             if (sub != null) {
                 rowSub.setColor(blend(0xA6FFFFFF, 0x991C1C1E, f));
-                c.drawText(sub, rect.left + 36, cy + 36, rowSub);
+                c.drawText(sub, rect.left + 36, cy + 30, rowSub);
             }
             if (!value.isEmpty()) {
                 rowValue.setColor(blend(0xA6FFFFFF, 0x991C1C1E, f));
@@ -314,11 +340,13 @@ public class SettingsActivity extends Activity {
         }
 
         private void drawFavorites(Canvas c) {
-            c.drawText(Ui.tr("Apps favoritos", "Favorite apps"), MARGIN, 150, heading);
-            c.drawText(TextUtils.ellipsize(Ui.tr(
-                    "OK adiciona ou remove. A ordem escolhida é a da primeira fileira. Voltar para salvar.",
-                    "OK adds or removes. The order you pick is the order of the first row. Back when done."), hint,
-                    W - 2 * MARGIN, TextUtils.TruncateAt.END).toString(), MARGIN, 206, hint);
+            boolean hiding = screen == HIDDEN;
+            c.drawText(hiding ? Ui.tr("Apps ocultos", "Hidden apps") : Ui.tr("Apps favoritos", "Favorite apps"), MARGIN, 150, heading);
+            String help = hiding ? Ui.tr("OK oculta ou mostra. Os apps ocultos continuam instalados. Voltar para salvar.",
+                    "OK hides or shows. Hidden apps stay installed. Back when done.")
+                    : Ui.tr("OK adiciona ou remove. A ordem escolhida é a da primeira fileira. Voltar para salvar.",
+                    "OK adds or removes. The order you pick is the order of the first row. Back when done.");
+            c.drawText(TextUtils.ellipsize(help, hint, W - 2 * MARGIN, TextUtils.TruncateAt.END).toString(), MARGIN, 206, hint);
             float gridW = GRID_COLS * CARD_W + (GRID_COLS - 1) * CARD_GAP, left = (W - gridW) / 2;
             c.save();
             c.clipRect(0, 240, W, H);
@@ -338,7 +366,8 @@ public class SettingsActivity extends Activity {
             float f = i < pop.size() ? Ui.clamp(pop.get(i).value) : 0;
             float s = 1 + 0.08f * f, cx = x + CARD_W / 2, cy = y + CARD_H / 2;
             rect.set(cx - CARD_W * s / 2, cy - CARD_H * s / 2, cx + CARD_W * s / 2, cy + CARD_H * s / 2);
-            int order = favorites.indexOf(it.pkg);
+            int order = screen == HIDDEN ? -1 : favorites.indexOf(it.pkg);
+            boolean isHidden = screen == HIDDEN && hidden.contains(it.pkg);
             if (f > 0.01f) {
                 shadow.setAlpha(Math.round(255 * f));
                 c.drawRoundRect(rect, 16 * s, 16 * s, shadow);
@@ -347,7 +376,7 @@ public class SettingsActivity extends Activity {
             clip.reset();
             clip.addRoundRect(rect, 16 * s, 16 * s, Path.Direction.CW);
             c.clipPath(clip);
-            image.setAlpha(order >= 0 || f > 0.5f ? 255 : 140);
+            image.setAlpha(screen == HIDDEN ? (isHidden ? 90 : 255) : order >= 0 || f > 0.5f ? 255 : 140);
             if (it.tile != null) c.drawBitmap(it.tile, null, rect, image);
             image.setAlpha(255);
             c.restore();
@@ -361,7 +390,14 @@ public class SettingsActivity extends Activity {
                 c.drawCircle(bx, by, 22, fill);
                 c.drawText(String.valueOf(order + 1), bx, by + Ui.halfCap(badge), badge);
             }
-            cardLabel.setColor(order >= 0 || f > 0.5f ? 0xFFFFFFFF : 0x99FFFFFF);
+            if (isHidden) {
+                fill.setColor(0xE6000000);
+                rect.set(cx - 70, cy - 22, cx + 70, cy + 22);
+                c.drawRoundRect(rect, 22, 22, fill);
+                cardLabel.setColor(0xFFFFFFFF);
+                c.drawText(Ui.tr("Oculto", "Hidden"), cx, cy + Ui.halfCap(cardLabel), cardLabel);
+            }
+            cardLabel.setColor(order >= 0 || isHidden || f > 0.5f ? 0xFFFFFFFF : 0x99FFFFFF);
             c.drawText(TextUtils.ellipsize(it.label, cardLabel, CARD_W, TextUtils.TruncateAt.END).toString(),
                     cx, y + CARD_H + 48, cardLabel);
         }
@@ -374,7 +410,7 @@ public class SettingsActivity extends Activity {
                 s.target = i == focus ? 1 : 0;
                 if (snap) s.snap(s.target);
             }
-            if (screen == FAVORITES) {
+            if (screen == FAVORITES || screen == HIDDEN) {
                 int row = focus / (int) GRID_COLS;
                 gridScroll.target = Math.max(0, (row - 2) * GRID_STEP);
                 if (snap) gridScroll.snap(gridScroll.target);
@@ -407,7 +443,7 @@ public class SettingsActivity extends Activity {
 
         boolean onKey(KeyEvent e) {
             boolean down = e.getAction() == KeyEvent.ACTION_DOWN;
-            int cols = screen == FAVORITES ? (int) GRID_COLS : 1;
+            int cols = screen == FAVORITES || screen == HIDDEN ? (int) GRID_COLS : 1;
             switch (e.getKeyCode()) {
                 case KeyEvent.KEYCODE_DPAD_UP:
                     if (down) moveTo(focus - cols);
@@ -436,7 +472,9 @@ public class SettingsActivity extends Activity {
                     if (down) {
                         if (e.getRepeatCount() == 0) backDown = true;
                     } else {
-                        if (backDown && !e.isCanceled()) go(MAIN, screen == FAVORITES ? ROW_FAVORITES : ROW_HOME);
+                        if (backDown && !e.isCanceled()) {
+                            go(MAIN, screen == FAVORITES ? ROW_FAVORITES : screen == HIDDEN ? ROW_HIDDEN : ROW_HOME);
+                        }
                         backDown = false;
                     }
                     return true;
@@ -453,7 +491,13 @@ public class SettingsActivity extends Activity {
 
         private void activate() {
             Context c = getContext();
-            if (screen == FAVORITES) {
+            if (screen == HIDDEN) {
+                if (focus >= apps.size()) return;
+                String pkg = apps.get(focus).pkg;
+                HomeApps.setHidden(c, pkg, !hidden.contains(pkg));
+                hidden = HomeApps.hidden(c);
+                invalidate();
+            } else if (screen == FAVORITES) {
                 if (focus >= apps.size()) return;
                 String pkg = apps.get(focus).pkg;
                 if (favorites.contains(pkg)) {
@@ -470,6 +514,16 @@ public class SettingsActivity extends Activity {
                 go(MAIN, ROW_HOME);
             } else if (focus == ROW_FAVORITES) {
                 go(FAVORITES, 0);
+            } else if (focus == ROW_HIDDEN) {
+                go(HIDDEN, 0);
+            } else if (focus == ROW_SORT) {
+                int i = java.util.Arrays.asList(SORTS).indexOf(HomeApps.sortMode(c));
+                HomeApps.setSortMode(c, SORTS[(i + 1) % SORTS.length]);
+                invalidate();
+            } else if (focus == ROW_LANGUAGE) {
+                int i = java.util.Arrays.asList(LANGUAGES).indexOf(Ui.choice(c).toLowerCase(java.util.Locale.ROOT));
+                Ui.setChoice(c, LANGUAGES[(i + 1) % LANGUAGES.length]);
+                invalidate();
             } else if (focus == ROW_NEWS) {
                 newsOn = !newsOn;
                 News.setEnabled(c, newsOn);
