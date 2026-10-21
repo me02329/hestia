@@ -214,7 +214,7 @@ final class Ui {
             {"OK hides or shows. Hidden apps stay installed. Back when done.",
                 "OK masque ou affiche. Les apps masquées restent installées. Retour pour terminer."},
             {"Hidden", "Masquée"}, {"Play", "Lecture"}, {"Pause", "Pause"}, {"Next", "Suivant"},
-            {"Previous", "Précédent"},
+            {"Previous", "Précédent"}, {"Open ", "Ouvrir "},
         };
         for (String[] p : pairs) FR.put(p[0], p[1]);
     }

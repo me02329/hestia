@@ -71,6 +71,26 @@ abstract class PanelActivity extends Activity {
         return super.dispatchKeyEvent(event);
     }
 
+    /** Optional card above the list (the quick panel's player): its height, 0 for none. */
+    float headerHeight() {
+        return 0;
+    }
+
+    /** Buttons in that card, moved through with left/right; up from the first entry reaches them. */
+    int headerButtons() {
+        return 0;
+    }
+
+    void drawHeader(Canvas c, RectF area, int focusedButton) {
+    }
+
+    void onHeaderButton(int index) {
+    }
+
+    void invalidatePanel() {
+        view.invalidate();
+    }
+
     /** Rebuilds the list (something it shows changed). */
     void refresh() {
         view.setEntries(entries());
@@ -98,7 +118,8 @@ abstract class PanelActivity extends Activity {
         private final List<Spring> pop = new ArrayList<>();
         private final Spring scroll = new Spring(0.4f, 1f, 0), appear = new Spring(0.32f, 0.9f, 0);
         private List<Entry> entries = new ArrayList<>();
-        private int focus;
+        private int focus, headerFocus = 1;   // focus -1: the header's buttons
+        private boolean hadHeader;
         private boolean framePending, okDown, detached;
         private long lastNanos;
         private float k = 1;
@@ -132,7 +153,11 @@ abstract class PanelActivity extends Activity {
         void setEntries(List<Entry> list) {
             entries = list;
             while (pop.size() < list.size()) pop.add(new Spring(0.26f, 0.85f, 0));
-            focus = Math.max(0, Math.min(focus, list.size() - 1));
+            boolean header = activity.headerButtons() > 0;
+            if (header && !hadHeader) focus = -1;   // a player appeared: start on play/pause
+            hadHeader = header;
+            focus = Math.max(header ? -1 : 0, Math.min(focus, list.size() - 1));
+            headerFocus = Math.min(headerFocus, Math.max(0, activity.headerButtons() - 1));
             retarget(true);
         }
 
@@ -140,8 +165,12 @@ abstract class PanelActivity extends Activity {
             k = width / W;
         }
 
-        private float listTop() {
+        private float headerTop() {
             return activity.subtitle().isEmpty() ? 150 : 190;
+        }
+
+        private float listTop() {
+            return headerTop() + activity.headerHeight();
         }
 
         @Override protected void onDraw(Canvas c) {
@@ -163,6 +192,11 @@ abstract class PanelActivity extends Activity {
                     TextUtils.TruncateAt.END).toString(), panel.left + PAD, panel.top + 92, titlePaint);
             if (!activity.subtitle().isEmpty()) {
                 c.drawText(activity.subtitle(), panel.left + PAD, panel.top + 140, subPaint);
+            }
+            if (activity.headerHeight() > 0) {
+                rect.set(panel.left + 24, panel.top + headerTop(), panel.right - 24,
+                        panel.top + headerTop() + activity.headerHeight() - 24);
+                activity.drawHeader(c, rect, focus == -1 ? headerFocus : -1);
             }
             c.save();
             c.clipRect(panel.left, panel.top + listTop() - 20, panel.right, panel.bottom - 20);
@@ -202,7 +236,7 @@ abstract class PanelActivity extends Activity {
                 if (snap) s.snap(s.target);
             }
             float visible = (panel.height() > 0 ? panel.height() : H - 80) - listTop() - PAD;
-            float y = focus * (ROW_H + ROW_GAP);
+            float y = Math.max(0, focus) * (ROW_H + ROW_GAP);
             scroll.target = Math.max(0, y + ROW_H - visible + ROW_H / 2);
             if (snap) scroll.snap(scroll.target);
             invalidate();
@@ -230,13 +264,18 @@ abstract class PanelActivity extends Activity {
             boolean down = e.getAction() == KeyEvent.ACTION_DOWN;
             switch (e.getKeyCode()) {
                 case KeyEvent.KEYCODE_DPAD_UP:
-                    if (down && focus > 0) { focus--; retarget(false); }
+                    if (down && focus > (activity.headerButtons() > 0 ? -1 : 0)) { focus--; retarget(false); }
                     return true;
                 case KeyEvent.KEYCODE_DPAD_DOWN:
                     if (down && focus < entries.size() - 1) { focus++; retarget(false); }
                     return true;
                 case KeyEvent.KEYCODE_DPAD_LEFT:
                 case KeyEvent.KEYCODE_DPAD_RIGHT:
+                    if (down && focus == -1) {
+                        int dx = e.getKeyCode() == KeyEvent.KEYCODE_DPAD_LEFT ? -1 : 1;
+                        headerFocus = Math.max(0, Math.min(activity.headerButtons() - 1, headerFocus + dx));
+                        invalidate();
+                    }
                     return true;
                 case KeyEvent.KEYCODE_DPAD_CENTER:
                 case KeyEvent.KEYCODE_ENTER:
@@ -244,7 +283,10 @@ abstract class PanelActivity extends Activity {
                     if (down) {
                         if (e.getRepeatCount() == 0) okDown = true;
                     } else {
-                        if (okDown && !e.isCanceled() && focus < entries.size()) entries.get(focus).action.run();
+                        if (okDown && !e.isCanceled()) {
+                            if (focus == -1) activity.onHeaderButton(headerFocus);
+                            else if (focus < entries.size()) entries.get(focus).action.run();
+                        }
                         okDown = false;
                     }
                     return true;

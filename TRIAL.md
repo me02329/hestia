@@ -93,3 +93,7 @@ Le retour utilisateur signale des éléments manquants en haut. La capture confi
   (`cmd notification allow_listener io.freemytv/io.freemytv.MediaListener`) ; aucune notification n’est lue.
   Retrait : `cmd notification disallow_listener io.freemytv/io.freemytv.MediaListener`.
 - Vérifié sur la TV : session Spotify en pause affichée. Commandes de lecture non déclenchées pendant le test.
+- Lecteur dans le panneau rapide : pochette, titre/artiste, progression en direct, précédent/lecture/suivant
+  (← → entre les boutons). Vérifié par capture avec la session Spotify en pause.
+- AirPlay : récepteur TCL `com.tcl.airplay2` + démon MediaTek, service de premier plan permanent (normal) ;
+  écran AirPlay visible pour la dernière fois le 2026-09-03 d’après usagestats. Déclencheur non encore observé.
