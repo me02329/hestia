@@ -8,12 +8,10 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.widget.TextView;
+import android.widget.LinearLayout;
+import android.widget.Button;
 
-/**
- * The Free My TV home screen (Android's "Home" role in Free My TV mode). It runs in the :home process: if it crashes,
- * the safety net in the main process keeps working. On the 3rd crash within 5 min, the Watchdog gives the home screen
- * back to the TV's original one.
- */
+/** Home UI with a dependency-light recovery screen after repeated Java crashes. */
 public class HomeActivity extends Activity {
     private HomeView home;
 
@@ -21,16 +19,31 @@ public class HomeActivity extends Activity {
         super.onCreate(savedInstanceState);
         Watchdog.install(this);
         if (Watchdog.crashedTooOften(this)) {
-            // Don't try to draw again: only show a notice while the main process restores the original home screen.
-            HomeMode.requestRevertHome(this);
+            LinearLayout recovery = new LinearLayout(this);
+            recovery.setOrientation(LinearLayout.VERTICAL);
+            recovery.setGravity(Gravity.CENTER);
+            recovery.setPadding(48, 48, 48, 48);
+            recovery.setBackgroundColor(Color.rgb(7, 11, 30));
             TextView t = new TextView(this);
-            t.setText(Ui.tr("O Início do Free My TV teve um problema.\nVoltando para o Início original da TV…",
-                    "Free My TV's home screen ran into a problem.\nGoing back to the TV's original home screen…"));
+            t.setText("Hestia encountered repeated crashes.\nOpen another home or restore from your computer.\nThe default home has not been changed.");
             t.setTextColor(Color.WHITE);
-            t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
+            t.setTextSize(22);
             t.setGravity(Gravity.CENTER);
-            t.setBackgroundColor(Color.rgb(7, 11, 30));
-            setContentView(t);
+            recovery.addView(t);
+            Button original = new Button(this);
+            original.setText("Open another home");
+            original.setOnClickListener(v -> HomeMode.openOtherHome(this));
+            recovery.addView(original);
+            Button settings = new Button(this);
+            settings.setText("TV settings");
+            settings.setOnClickListener(v -> HomeMode.openSettings(this));
+            recovery.addView(settings);
+            Button retry = new Button(this);
+            retry.setText("Retry Hestia");
+            retry.setOnClickListener(v -> { Watchdog.clear(this); recreate(); });
+            recovery.addView(retry);
+            setContentView(recovery);
+            original.requestFocus();
             return;
         }
         Ui.init(this);

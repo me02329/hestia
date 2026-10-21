@@ -1,6 +1,7 @@
 package io.freemytv;
 
 import android.content.Context;
+import android.util.AtomicFile;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -10,11 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Safety net for the :home process (home screen and screensaver): each crash is recorded, and on the 3rd within 5 min
- * the home screen goes back to the TV's original one (requested from the main process) and the app leaves a notice.
- * File: files/home-crashes.txt.
- */
+/** Records Java crashes. The next home launch shows recovery UI; no system changes. */
 final class Watchdog {
     private Watchdog() {}
 
@@ -29,31 +26,37 @@ final class Watchdog {
         final Thread.UncaughtExceptionHandler previous = Thread.getDefaultUncaughtExceptionHandler();
         Thread.setDefaultUncaughtExceptionHandler((thread, error) -> {
             try {
-                if (record(app, System.currentTimeMillis()) >= LIMIT) HomeMode.requestRevertHome(app);
+                record(app, System.currentTimeMillis());
             } catch (Throwable ignored) {
             }
             if (previous != null) previous.uncaughtException(thread, error);
         });
     }
 
-    /** Our home screen crashed too often just now: don't retry (avoids a crash loop while the original comes back). */
+    /** Our home screen crashed too often just now: don't retry (avoids a crash loop until the user chooses recovery). */
     static boolean crashedTooOften(Context c) {
         return recent(c, System.currentTimeMillis()).size() >= LIMIT;
     }
 
-    /** After Free My TV mode is turned back on, the count starts over. */
+    /** Explicit retry from the recovery screen resets the counter. */
     static void clear(Context c) {
-        //noinspection ResultOfMethodCallIgnored
-        file(c).delete();
+        new AtomicFile(file(c)).delete();
     }
 
-    private static int record(Context c, long now) throws IOException {
+    private static synchronized int record(Context c, long now) throws IOException {
         List<Long> list = recent(c, now);
         list.add(now);
         StringBuilder sb = new StringBuilder();
         for (long at : list) sb.append(at).append('\n');
-        try (FileOutputStream out = new FileOutputStream(file(c))) {
+        AtomicFile target = new AtomicFile(file(c));
+        FileOutputStream out = null;
+        try {
+            out = target.startWrite();
             out.write(sb.toString().getBytes(StandardCharsets.UTF_8));
+            target.finishWrite(out);
+        } catch (IOException e) {
+            target.failWrite(out);
+            throw e;
         }
         return list.size();
     }
@@ -61,8 +64,7 @@ final class Watchdog {
     private static List<Long> recent(Context c, long now) {
         List<Long> list = new ArrayList<>();
         File f = file(c);
-        if (!f.exists()) return list;
-        try (FileInputStream in = new FileInputStream(f)) {
+        try (FileInputStream in = new AtomicFile(f).openRead()) {
             byte[] data = new byte[(int) Math.min(f.length(), 4096)];
             int read = in.read(data);
             if (read <= 0) return list;

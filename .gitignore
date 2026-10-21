@@ -9,3 +9,10 @@ out/
 
 # macOS
 .DS_Store
+
+# Local signing password, device snapshots and Python output
+*.keystore.pass
+backups/
+*.journal.json
+__pycache__/
+*.apk.sha256
