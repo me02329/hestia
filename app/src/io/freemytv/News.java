@@ -25,17 +25,19 @@ import java.util.concurrent.Executors;
 
 /**
  * Cybersecurity headlines from a few RSS feeds (no key), the last 24 h (48 h when that's too few), newest first.
- * Refreshed every 30 min while the home screen is visible; cached so it opens with headlines. Only titles, sources
- * and dates are kept: nothing is opened or rendered from the feeds.
+ * Refreshed every 30 min while the home screen is visible; cached so it opens with headlines. Only titles, sources,
+ * dates and the article's https link are kept; nothing from the feeds is rendered as HTML. Links open only when chosen
+ * in the news list (NewsActivity), in the TV's browser.
  */
 final class News {
     static final class Headline {
-        final String title, source;
+        final String title, source, link;   // link: https URL or ""
         final long at;
 
-        Headline(String title, String source, long at) {
+        Headline(String title, String source, String link, long at) {
             this.title = title;
             this.source = source;
+            this.link = link;
             this.at = at;
         }
     }
@@ -75,6 +77,10 @@ final class News {
             all = parseCache(new JSONArray(prefs.getString("items", "[]")));
         } catch (org.json.JSONException ignored) {
         }
+        boolean linked = false;
+        for (Headline h : all) linked |= !h.link.isEmpty();
+        if (!linked) fetchedAt = 0;   // cache from before links were kept: fetch again
+
     }
 
     static boolean enabled(Context c) {
@@ -134,7 +140,9 @@ final class News {
         fetchedAt = System.currentTimeMillis();
         JSONArray cache = new JSONArray();
         try {
-            for (Headline h : unique) cache.put(new JSONObject().put("t", h.title).put("s", h.source).put("at", h.at));
+            for (Headline h : unique) {
+                cache.put(new JSONObject().put("t", h.title).put("s", h.source).put("l", h.link).put("at", h.at));
+            }
         } catch (org.json.JSONException ignored) {
         }
         prefs.edit().putString("items", cache.toString()).putLong("at", fetchedAt).apply();
@@ -148,15 +156,23 @@ final class News {
         p.setInput(new StringReader(xml));
         List<Headline> out = new ArrayList<>();
         boolean inItem = false;
-        String title = null, date = null;
+        String title = null, date = null, link = null;
         for (int event = p.getEventType(); event != XmlPullParser.END_DOCUMENT; event = p.next()) {
             if (event == XmlPullParser.START_TAG) {
                 String name = p.getName();
                 if (name.equals("item") || name.equals("entry")) {
                     inItem = true;
-                    title = date = null;
+                    title = date = link = null;
                 } else if (inItem && name.equals("title")) {
                     title = p.nextText();
+                } else if (inItem && name.equals("link") && link == null) {
+                    String href = p.getAttributeValue(null, "href");   // Atom
+                    String rel = p.getAttributeValue(null, "rel");
+                    if (href != null) {
+                        if (rel == null || rel.equals("alternate")) link = href;
+                    } else {
+                        link = p.nextText();                           // RSS
+                    }
                 } else if (inItem && (name.equals("pubDate") || name.equals("updated") || name.equals("published"))) {
                     if (date == null) date = p.nextText();
                 }
@@ -164,7 +180,7 @@ final class News {
                 inItem = false;
                 long at = parseDate(date);
                 String clean = clean(title);
-                if (at > 0 && !clean.isEmpty()) out.add(new Headline(clean, source, at));
+                if (at > 0 && !clean.isEmpty()) out.add(new Headline(clean, source, safeLink(link), at));
             }
         }
         return out;
@@ -177,6 +193,30 @@ final class News {
                 .replace("&#8217;", "’").replace("&#8216;", "‘").replace("&#8220;", "“").replace("&#8221;", "”")
                 .replace("&nbsp;", " ").replaceAll("\\s+", " ").trim();
         return s.length() > TITLE_MAX ? s.substring(0, TITLE_MAX - 1) + "…" : s;
+    }
+
+    /** The link only if it's a plain https URL (no credentials, bounded length); otherwise "". */
+    static String safeLink(String s) {
+        if (s == null) return "";
+        s = s.trim();
+        if (s.length() > 600 || !s.startsWith("https://") || s.matches(".*[\\s\"<>].*")) return "";
+        try {
+            java.net.URL url = new java.net.URL(s);
+            if (url.getUserInfo() != null || url.getHost().isEmpty()) return "";
+            return s;
+        } catch (java.net.MalformedURLException e) {
+            return "";
+        }
+    }
+
+    /** "bleepingcomputer.com" (shown under the list so you know where a link goes). */
+    static String domain(String link) {
+        try {
+            String host = new java.net.URL(link).getHost();
+            return host.startsWith("www.") ? host.substring(4) : host;
+        } catch (java.net.MalformedURLException e) {
+            return "";
+        }
     }
 
     static long parseDate(String s) {
@@ -196,7 +236,9 @@ final class News {
         List<Headline> out = new ArrayList<>();
         for (int i = 0; i < list.length(); i++) {
             JSONObject o = list.optJSONObject(i);
-            if (o != null) out.add(new Headline(clean(o.optString("t")), o.optString("s"), o.optLong("at")));
+            if (o != null) {
+                out.add(new Headline(clean(o.optString("t")), o.optString("s"), safeLink(o.optString("l")), o.optLong("at")));
+            }
         }
         return out;
     }

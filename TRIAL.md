@@ -67,3 +67,9 @@ Le retour utilisateur signale des éléments manquants en haut. La capture confi
 - Emblème fourni par le propriétaire vectorisé (`tools/vectorize_logo.py`, potrace) : SVG et PNG transparents dans
   `branding/`, VectorDrawable affiché sur l’accueil (en haut au centre) et dans les réglages ; icône et bannière
   regénérées depuis l’emblème. Cartes « TV & inputs » colorées. Vérifié par captures sur la TV.
+
+## Hestia 1.6-safe — 22 octobre 2026
+
+- Actus : rotation 12 s (en pause quand le titre a le focus). ↑ depuis les apps sélectionne le titre ; OK ouvre la
+  liste des actus (NewsActivity) ; OK sur une actu ouvre son lien https dans le navigateur de la TV (TV Bro).
+  Vérifié sur la TV : focus, liste de 40 titres, ouverture d’un article.

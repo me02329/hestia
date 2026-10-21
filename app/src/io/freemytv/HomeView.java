@@ -31,7 +31,8 @@ import java.util.concurrent.Executors;
  * The home screen, drawn on a 1920 × 1080 canvas (scaled to the screen):
  *  - a photo of the day in full screen (Photos), a new one every 2 minutes with a crossfade;
  *  - top left the time and date, top center the Hestia emblem and name, top right the weather and the photo's title;
- *  - under the date, the latest cybersecurity headline (News), a new one every 8 s (can be turned off in settings);
+ *  - under the date, the latest cybersecurity headline (News), a new one every 12 s (can be turned off in settings);
+ *    ↑ from the first row focuses it, OK opens the list of headlines (NewsActivity);
  *  - three rows of 16:9 cards: the streaming apps, the TV and its inputs (plus settings), and every other app.
  * D-pad moves the focus (the focused card grows and gets a white outline), OK opens it on release, Back returns to the
  * first app. Rows below the second scroll up into view; the time and weather fade out when they would be covered.
@@ -41,7 +42,7 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
     private static final float W = 1920, H = 1080;
     private static final float MARGIN = 96, ROWS_TOP = 540, ROW_STEP = 300, TITLE_GAP = 26;
     private static final float CARD_W = 320, CARD_H = 180, GAP = 36, RADIUS = 18, FOCUS_GROW = 0.1f;
-    private static final long PHOTO_EVERY = 120_000, FADE_MS = 1_500, HEADLINE_EVERY = 8_000, HEADLINE_MS = 600;
+    private static final long PHOTO_EVERY = 120_000, FADE_MS = 1_500, HEADLINE_EVERY = 12_000, HEADLINE_MS = 600;
     private static final float LOGO_TOP = 44, LOGO_H = 132;
     /** Cards fade out over this width at the screen edges instead of being cut. */
     private static final float EDGE_FADE = 160;
@@ -68,7 +69,8 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
     private List<News.Headline> headlines = new ArrayList<>();
     private int headline;
     private long headlineAt;
-    private boolean newsOn;
+    private boolean newsOn, newsFocus;
+    private final Spring newsPop = new Spring(0.28f, 0.85f, 0);
     private final Click click;
     private final TvInputManager tvInputs;
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -92,7 +94,7 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
     private final Paint shadow = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint topScrim = new Paint(), bottomScrim = new Paint();
     private final Paint edgeMask = new Paint(), pill = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private Paint pillText, sourcePaint, brandPaint;
+    private Paint pillText, sourcePaint, brandPaint, hintPaint;
     private final Paint logoHalo = new Paint();
     private final Drawable logo;
     private TextPaint headlinePaint;
@@ -112,7 +114,7 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
     private final Runnable rotate = new Runnable() {
         @Override public void run() {
             if (!running) return;
-            if (headlines.size() > 1) {
+            if (headlines.size() > 1 && !newsFocus) {
                 headline = (headline + 1) % headlines.size();
                 headlineAt = SystemClock.uptimeMillis();
                 schedule();
@@ -186,6 +188,7 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
     /** Home pressed while already home: back to the first app. */
     void reset(boolean animated) {
         row = 0;
+        newsFocus = false;
         for (Row r : rows) r.index = 0;
         retarget(!animated);
     }
@@ -307,6 +310,8 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
         headlinePaint = new TextPaint(Ui.text(Ui.medium, 36, Color.WHITE));
         for (Paint p : new Paint[] {sourcePaint, headlinePaint}) p.setShadowLayer(12, 0, 2, 0x99000000);
         pill.setColor(0xD9E5484D);
+        hintPaint = Ui.text(Ui.medium, 22, Color.WHITE);
+        hintPaint.setTextAlign(Paint.Align.RIGHT);
         brandPaint = Ui.text(Ui.semibold, 24, 0xFFE9C587);
         brandPaint.setTextAlign(Paint.Align.CENTER);
         brandPaint.setLetterSpacing(0.35f);
@@ -412,6 +417,17 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
         c.drawRoundRect(rect, 18, 18, pill);
         pillText.setAlpha(Math.round(255 * alpha));
         c.drawText(label, MARGIN + 14, rect.centerY() + Ui.halfCap(pillText), pillText);
+        float f = Ui.clamp(newsPop.value);
+        if (f > 0.01f) {
+            float tw = Math.min(W - 2 * MARGIN, headlinePaint.measureText(headlines.get(headline).title));
+            rect.set(MARGIN - 28, 262, MARGIN + Math.max(tw, 760) + 28, 398);
+            fill.setColor(Ui.alpha(0x40FFFFFF, f));
+            c.drawRoundRect(rect, 26, 26, fill);
+            outline.setAlpha(Math.round(255 * f));
+            c.drawRoundRect(rect, 26, 26, outline);
+            hintPaint.setAlpha(Math.round(230 * f * alpha));
+            c.drawText(Ui.tr("OK · todas as notícias", "OK · all headlines"), rect.right - 24, 310, hintPaint);
+        }
         int previous = (headline - 1 + headlines.size()) % headlines.size();
         if (t < 1 && headlines.size() > 1) drawHeadlineText(c, headlines.get(previous), MARGIN + pw + 16, -24 * t, (1 - t) * alpha);
         drawHeadlineText(c, headlines.get(headline), MARGIN + pw + 16, 24 * (1 - t), t * alpha);
@@ -543,6 +559,8 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
 
     /** Points every spring at the current focus. */
     private void retarget(boolean snap) {
+        newsPop.target = newsFocus ? 1 : 0;
+        if (snap) newsPop.snap(newsPop.target);
         scrollY.target = Math.max(0, row - 1) * ROW_STEP;
         if (snap) scrollY.snap(scrollY.target);
         for (int r = 0; r < rows.size(); r++) {
@@ -558,7 +576,7 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
             if (snap) rw.scroll.snap(rw.scroll.target);
             for (int i = 0; i < rw.pop.size(); i++) {
                 Spring s = rw.pop.get(i);
-                s.target = r == row && i == rw.index ? 1 : 0;
+                s.target = !newsFocus && r == row && i == rw.index ? 1 : 0;
                 if (snap) s.snap(s.target);
             }
         }
@@ -576,7 +594,7 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
         framePending = false;
         float dt = lastNanos == 0 ? 1 / 60f : Math.min(0.05f, (nanos - lastNanos) / 1e9f);
         lastNanos = nanos;
-        boolean moving = scrollY.step(dt);
+        boolean moving = scrollY.step(dt) | newsPop.step(dt);
         for (Row r : rows) {
             moving |= r.scroll.step(dt);
             for (Spring s : r.pop) moving |= s.step(dt);
@@ -626,7 +644,7 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
                 if (down) {
                     if (e.getRepeatCount() == 0) backDown = true;
                 } else {
-                    if (backDown && !e.isCanceled() && (row != 0 || rows.isEmpty() || rows.get(0).index != 0)) {
+                    if (backDown && !e.isCanceled() && (newsFocus || row != 0 || rows.isEmpty() || rows.get(0).index != 0)) {
                         reset(true);
                         click.move();
                     }
@@ -639,6 +657,19 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
     }
 
     private void move(int dx, int dy) {
+        if (newsFocus) {
+            if (dy <= 0) return;
+            newsFocus = false;
+            click.move();
+            retarget(false);
+            return;
+        }
+        if (row == 0 && dy < 0 && newsOn && !headlines.isEmpty()) {
+            newsFocus = true;
+            click.move();
+            retarget(false);
+            return;
+        }
         if (rows.isEmpty()) return;
         Row r = rows.get(row);
         if (dx != 0) {
@@ -668,6 +699,13 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
     }
 
     private void open() {
+        if (newsFocus) {
+            if (headlines.isEmpty()) return;
+            click.open();
+            activity.startActivity(new android.content.Intent(activity, NewsActivity.class)
+                    .putExtra(NewsActivity.EXTRA_TITLE, headlines.get(headline).title));
+            return;
+        }
         HomeApps.Item it = focused();
         if (it == null) return;
         Row r = rows.get(row);
