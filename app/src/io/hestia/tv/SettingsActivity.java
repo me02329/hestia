@@ -1,4 +1,4 @@
-package io.freemytv;
+package io.hestia.tv;
 
 import android.app.Activity;
 import android.content.Context;
@@ -42,7 +42,7 @@ public class SettingsActivity extends Activity {
     @Override protected void onResume() {
         super.onResume();
         view.resume();
-        // From ADB: am start -n io.freemytv/.SettingsActivity --ez screensaver true (straight to the preview).
+        // From ADB: am start -n io.hestia.tv/.SettingsActivity --ez screensaver true (straight to the preview).
         if (preview == null && getIntent().getBooleanExtra("screensaver", false)) {
             getIntent().removeExtra("screensaver");
             view.pause();

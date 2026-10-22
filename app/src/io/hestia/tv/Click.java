@@ -1,4 +1,4 @@
-package io.freemytv;
+package io.hestia.tv;
 
 import android.content.Context;
 import android.media.AudioAttributes;
@@ -20,7 +20,10 @@ final class Click {
     private SoundPool pool;
     private int move, open;
 
+    private final Context context;
+
     Click(Context c) {
+        context = c.getApplicationContext();
         try {
             pool = new SoundPool.Builder().setMaxStreams(3).setAudioAttributes(new AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
@@ -34,11 +37,17 @@ final class Click {
     }
 
     void move() {
-        if (pool != null) pool.play(move, 0.14f, 0.14f, 1, 0, 1f);
+        if (pool != null && enabled()) pool.play(move, 0.14f, 0.14f, 1, 0, 1f);
     }
 
     void open() {
-        if (pool != null) pool.play(open, 0.18f, 0.18f, 1, 0, 1f);
+        if (pool != null && enabled()) pool.play(open, 0.18f, 0.18f, 1, 0, 1f);
+    }
+
+    /** The TV's "system sounds" setting (Settings › Sound): off means no click. */
+    private boolean enabled() {
+        return android.provider.Settings.System.getInt(context.getContentResolver(),
+                android.provider.Settings.System.SOUND_EFFECTS_ENABLED, 1) != 0;
     }
 
     void release() {

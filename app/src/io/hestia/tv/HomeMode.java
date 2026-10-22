@@ -1,4 +1,4 @@
-package io.freemytv;
+package io.hestia.tv;
 
 import android.app.Activity;
 import android.content.ComponentName;
@@ -12,7 +12,7 @@ import org.json.JSONObject;
 /** Read-only home detection. No ADB client or privileged mutation path. */
 final class HomeMode {
     private HomeMode() {}
-    static final String PKG = "io.freemytv";
+    static final String PKG = "io.hestia.tv";
     static final String FREE = "free", ORIGINAL = "original";
 
     static Intent homeIntent() {

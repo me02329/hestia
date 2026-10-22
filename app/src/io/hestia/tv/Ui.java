@@ -1,4 +1,4 @@
-package io.freemytv;
+package io.hestia.tv;
 
 import android.content.Context;
 import android.content.res.AssetManager;
@@ -204,7 +204,11 @@ final class Ui {
             {"OK hides or shows. Hidden apps stay installed. Back when done.",
                 "OK masque ou affiche. Les apps masquées restent installées. Retour pour terminer."},
             {"Hidden", "Masquée"}, {"Play", "Lecture"}, {"Pause", "Pause"}, {"Next", "Suivant"},
-            {"Previous", "Précédent"}, {"Open ", "Ouvrir "}, {"Remote buttons", "Touches de la télécommande"},
+            {"Previous", "Précédent"}, {"Open ", "Ouvrir "},
+            {"Hestia crashed several times.\nThe default home screen has not been changed.",
+                "Hestia a planté plusieurs fois.\nL’accueil par défaut n’a pas été modifié."},
+            {"Apps (re-enable Google TV)", "Applications (réactiver Google TV)"}, {"Another home", "Autre accueil"},
+            {"Retry Hestia", "Relancer Hestia"}, {"Remote buttons", "Touches de la télécommande"},
             {"On the home screen; Home held down anywhere", "Sur l’accueil ; Home maintenu partout"},
             {"TV button", "Touche TV"}, {"Settings button", "Touche Réglages"},
             {"Home (press and hold)", "Home (appui long)"}, {"Quick panel", "Panneau rapide"}, {"Search", "Rechercher"},

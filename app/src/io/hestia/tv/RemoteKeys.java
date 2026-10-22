@@ -1,6 +1,5 @@
-package io.freemytv;
+package io.hestia.tv;
 
-import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
@@ -75,7 +74,7 @@ final class RemoteKeys {
     }
 
     /** Runs the action; false when it can't be opened (uninstalled app, unplugged input…). */
-    static boolean run(Activity a, String action) {
+    static boolean run(Context a, String action) {
         Intent intent;
         if (action.equals(PANEL)) {
             intent = new Intent(a, QuickPanelActivity.class);

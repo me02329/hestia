@@ -1,4 +1,4 @@
-package io.freemytv;
+package io.hestia.tv;
 
 import android.service.dreams.DreamService;
 

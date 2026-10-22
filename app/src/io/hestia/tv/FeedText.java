@@ -1,4 +1,4 @@
-package io.freemytv;
+package io.hestia.tv;
 
 import java.net.MalformedURLException;
 import java.net.URL;

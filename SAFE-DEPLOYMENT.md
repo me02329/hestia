@@ -18,7 +18,7 @@ BACKUP=backups/tcl-original.json    # privée, hors Git ; garder aussi ses fichi
 python3 tools/tv_safe.py snapshot --adb "$ADB" --serial "$TV_SERIAL" --backup "$BACKUP"   # ne modifie rien
 ./build.sh && sha256sum -c Hestia.apk.sha256
 "$ADB" -s "$TV_SERIAL" install -r Hestia.apk
-"$ADB" -s "$TV_SERIAL" shell am start -n io.freemytv/.HomeActivity                    # aperçu
+"$ADB" -s "$TV_SERIAL" shell am start -n io.hestia.tv/.HomeActivity                    # aperçu
 ```
 
 La sauvegarde garde l’accueil et l’économiseur d’origine ; elle refuse d’écraser une sauvegarde existante.
@@ -36,8 +36,16 @@ Il faut alors désactiver le launcher Google TV et l’écran de récupération 
 
 ```sh
 python3 tools/tv_safe.py disable-stock-home --adb "$ADB" --serial "$TV_SERIAL" --backup "$BACKUP"
-"$ADB" -s "$TV_SERIAL" shell settings put secure screensaver_components io.freemytv/io.freemytv.Screensaver
-"$ADB" -s "$TV_SERIAL" shell cmd notification allow_listener io.freemytv/io.freemytv.MediaListener   # lecteur
+"$ADB" -s "$TV_SERIAL" shell settings put secure screensaver_components io.hestia.tv/io.hestia.tv.Screensaver
+"$ADB" -s "$TV_SERIAL" shell cmd notification allow_listener io.hestia.tv/io.hestia.tv.MediaListener   # lecteur
+```
+
+Touche Réglages dans les autres apps (facultatif) : service d’accessibilité limité aux touches. Vérifier d’abord la
+valeur existante (`settings get secure enabled_accessibility_services`) et l’ajouter avec `:` si elle n’est pas vide.
+
+```sh
+"$ADB" -s "$TV_SERIAL" shell settings put secure enabled_accessibility_services io.hestia.tv/io.hestia.tv.RemoteKeysService
+"$ADB" -s "$TV_SERIAL" shell settings put secure accessibility_enabled 1
 ```
 
 L’économiseur Ambient de Google cesse de fonctionner sans son launcher (la TV passait directement en veille) :

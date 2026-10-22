@@ -121,3 +121,13 @@ Le retour utilisateur signale des éléments manquants en haut. La capture confi
 - Nettoyage : config sans TMDB ni devise (anciennes clés ignorées), APK renommé `Hestia.apk` (clé de signature
   inchangée), météo réduite au temps actuel, code et icônes inutilisés retirés, `FeedText` testé sur JVM,
   `tv_safe.py` gère `disable-stock-home` / `enable-stock-home` (tests simulés ; `status` vérifié sur la TV).
+
+## Hestia 1.11-safe — identifiant `io.hestia.tv` — 22 octobre 2026
+
+- Nouvel identifiant `io.hestia.tv` et nouvelle clé (« CN=Hestia Local ») ; `io.freemytv` désinstallée après
+  validation. Bascule via `tv_safe.py disable-stock-home` (paquets d’origine désormais enregistrés).
+- Écran de récupération refait (FR, sorties utiles sans Google TV), cartes d’apps rafraîchies à l’installation /
+  mise à jour, clic muet si les sons système sont coupés.
+- Touche Réglages dans les autres apps via `RemoteKeysService` (accessibilité, touches seulement) : activée par
+  ADB (un cycle `accessibility_enabled` 0→1 a été nécessaire pour que le service soit lié). Les touches simulées par
+  `input` ne passent pas par le filtre ; **validé par le propriétaire avec la vraie télécommande**.

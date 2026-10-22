@@ -1,4 +1,4 @@
-package io.freemytv;
+package io.hestia.tv;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -33,7 +33,7 @@ final class Net {
         c.setInstanceFollowRedirects(false);
         c.setConnectTimeout(8000);
         c.setReadTimeout(8000);
-        c.setRequestProperty("User-Agent", "Hestia/1.10-safe");
+        c.setRequestProperty("User-Agent", "Hestia/1.11-safe");
         return c;
     }
 

@@ -1,4 +1,4 @@
-package io.freemytv;
+package io.hestia.tv;
 
 import android.app.Activity;
 import android.content.Context;
@@ -114,6 +114,14 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
         @Override public void onInputRemoved(String inputId) { reload(); }
     };
 
+    /** Apps installed, updated or removed while the home screen is up: fresh cards and rows right away. */
+    private final android.content.BroadcastReceiver packages = new android.content.BroadcastReceiver() {
+        @Override public void onReceive(Context c, android.content.Intent intent) {
+            if (intent.getData() != null) HomeApps.forget(intent.getData().getSchemeSpecificPart());
+            reload();
+        }
+    };
+
     private final Runnable rotate = new Runnable() {
         @Override public void run() {
             if (!running) return;
@@ -171,6 +179,13 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
             handler.postDelayed(rotate, HEADLINE_EVERY);
         }
         if (tvInputs != null) tvInputs.registerCallback(inputCallback, handler);
+        android.content.IntentFilter filter = new android.content.IntentFilter();
+        filter.addAction(android.content.Intent.ACTION_PACKAGE_ADDED);
+        filter.addAction(android.content.Intent.ACTION_PACKAGE_REPLACED);
+        filter.addAction(android.content.Intent.ACTION_PACKAGE_REMOVED);
+        filter.addAction(android.content.Intent.ACTION_PACKAGE_CHANGED);
+        filter.addDataScheme("package");
+        getContext().registerReceiver(packages, filter, Context.RECEIVER_NOT_EXPORTED);
         reload();
         if (photo == null || SystemClock.uptimeMillis() - photoAt >= PHOTO_EVERY) nextPhoto();
         handler.post(tick);
@@ -185,6 +200,10 @@ final class HomeView extends View implements Choreographer.FrameCallback, HomeDa
         news.removeListener(this);
         handler.removeCallbacks(rotate);
         if (tvInputs != null) tvInputs.unregisterCallback(inputCallback);
+        try {
+            getContext().unregisterReceiver(packages);
+        } catch (IllegalArgumentException ignored) {   // pause() before any resume()
+        }
     }
 
     void destroy() {

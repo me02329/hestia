@@ -1,4 +1,4 @@
-package io.freemytv;
+package io.hestia.tv;
 
 /** Damped spring, like macOS animations: response (s) and damping (1 = no bounce). */
 final class Spring {

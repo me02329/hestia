@@ -35,7 +35,7 @@ def generate(source):
     for key, pattern in (("language", "auto|en|fr|pt"), ("temperature", "auto|C|F")):
         if not re.fullmatch(pattern, values[key]):
             raise ValueError("Invalid configuration value for: " + key)
-    return ("package io.freemytv;\n\n// Generated; edit config.properties.\nfinal class Config {\n"
+    return ("package io.hestia.tv;\n\n// Generated; edit config.properties.\nfinal class Config {\n"
             "    private Config() {}\n" + "".join(
                 "    static final String " + key.upper() + " = " + json.dumps(value, ensure_ascii=True) + ";\n"
                 for key, value in values.items()) + "}\n")

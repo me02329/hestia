@@ -22,11 +22,11 @@ import sys
 import tempfile
 import time
 
-HOME = "io.freemytv/io.freemytv.HomeActivity"
+HOME = "io.hestia.tv/io.hestia.tv.HomeActivity"
 # Google TV's launcher and its setup "recovery" HOME, both above any user-chosen HOME on the TCL G08.
 STOCK = ("com.google.android.apps.tv.launcherx", "com.google.android.tungsten.setupwraith")
 PACKAGE = re.compile(r"[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)+")
-DREAM = "io.freemytv/io.freemytv.Screensaver"
+DREAM = "io.hestia.tv/io.hestia.tv.Screensaver"
 SETTING = "screensaver_components"
 HOME_SETTLE_SECONDS = 10
 MAIN = "android.intent.action.MAIN"
@@ -168,7 +168,7 @@ def durable_write(path, data, exclusive=False):
 @contextmanager
 def device_lock(identity):
     # One lock per physical TV, even when different backup files/ADB ports are used.
-    directory = Path.home() / ".local/state/free-my-tv/locks"
+    directory = Path.home() / ".local/state/hestia/locks"
     directory.mkdir(mode=0o700, parents=True, exist_ok=True)
     name = hashlib.sha256(identity["serial"].encode()).hexdigest() + ".lock"
     with (directory / name).open("a") as lock:
@@ -212,7 +212,7 @@ def snapshot(adb, path):
     identity = adb.identity()
     home = adb.home()
     if home == HOME:
-        raise SafetyError("Already using Free My TV; the original home cannot be inferred")
+        raise SafetyError("Already using Hestia; the original home cannot be inferred")
     data = {"schema": 1, "identity": identity, "home": home, "dream": adb.dream()}
     # No mutations on the TV; backup is immutable and private (0600).
     durable_write(path, data, exclusive=True)
@@ -277,7 +277,7 @@ def activate(adb, path, screensaver=False):
         if journal["phase"] != "restored":
             raise SafetyError("Existing operation: run restore before a new activation")
     if HOME not in adb.homes():
-        raise SafetyError("Install and preview Free My TV before activating")
+        raise SafetyError("Install and preview Hestia before activating")
     if adb.home() != saved["home"] or (screensaver and adb.dream() != saved["dream"]):
         raise SafetyError("TV state changed since snapshot; no changes made")
     journal = {"schema": 1, "snapshot": digest(saved), "screensaver": screensaver, "phase": "applying"}
@@ -315,9 +315,11 @@ def disable_stock_home(adb, path):
     same_tv(adb, saved)
     if HOME not in adb.homes():
         raise SafetyError("Install and preview Hestia before disabling the stock home")
-    targets = [p for p in STOCK if p not in adb.disabled()]
+    disabled = adb.disabled()
+    targets = [p for p in STOCK if p not in disabled]
     record = read_json(stock_path(path)) if stock_path(path).exists() else {"packages": []}
-    packages = sorted(set(record.get("packages", [])) | set(targets))
+    # Stock packages already disabled (by hand, or for an earlier app id) are recorded too: they're ours to undo.
+    packages = sorted(set(record.get("packages", [])) | set(STOCK))
     # Persist which packages this tool owns before the first change, so enable-stock-home can always undo it.
     durable_write(stock_path(path), {"schema": 1, "snapshot": digest(saved), "packages": packages})
     done = []

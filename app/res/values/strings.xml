@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Hestia</string>
+    <string name="remote_keys_description">Lets the remote\'s Settings button open Hestia\'s quick panel (or the action chosen in Hestia\'s settings) inside any app. Only that button is taken; every other key passes through. Hestia reads no screen content.</string>
 </resources>

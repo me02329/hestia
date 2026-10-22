@@ -1,4 +1,4 @@
-package io.freemytv;
+package io.hestia.tv;
 
 import android.app.Activity;
 import android.app.ActivityOptions;
@@ -381,6 +381,11 @@ final class HomeApps {
     }
 
     // MARK: - Cards
+
+    /** An app was installed, updated or removed: its card is rebuilt next time (the banner may have changed). */
+    static synchronized void forget(String pkg) {
+        TILES.remove(pkg);
+    }
 
     private static synchronized Bitmap appTile(Context c, String pkg) {
         if (TILES.containsKey(pkg)) return TILES.get(pkg);

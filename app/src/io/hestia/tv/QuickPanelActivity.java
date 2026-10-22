@@ -1,4 +1,4 @@
-package io.freemytv;
+package io.hestia.tv;
 
 import android.content.ComponentName;
 import android.content.Intent;

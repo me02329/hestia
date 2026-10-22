@@ -1,4 +1,4 @@
-package io.freemytv;
+package io.hestia.tv;
 
 public final class FeedTextTest {
     private static void require(boolean condition, String what) {
