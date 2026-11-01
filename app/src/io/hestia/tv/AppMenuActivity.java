@@ -1,10 +1,17 @@
 package io.hestia.tv;
 
-import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
-import android.net.Uri;
-import android.provider.Settings;
+import android.os.Bundle;
+
+import io.hestia.tv.apps.AppCatalog;
+import io.hestia.tv.apps.Launcher;
+import io.hestia.tv.core.I18n;
+import io.hestia.tv.core.Prefs;
+import io.hestia.tv.core.Screens;
+import io.hestia.tv.media.PlayerCard;
+import io.hestia.tv.panel.PanelActivity;
+import io.hestia.tv.panel.PanelEntry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,87 +21,75 @@ import java.util.List;
  * info page, its Play Store page, or uninstall it (Android asks for confirmation; system apps can't be).
  */
 public class AppMenuActivity extends PanelActivity {
-    static final String EXTRA_PACKAGE = "package";
-
     private String pkg, label = "";
 
-    @Override protected void onCreate(android.os.Bundle savedInstanceState) {
-        pkg = getIntent().getStringExtra(EXTRA_PACKAGE);
-        if (pkg == null || !pkg.matches("[A-Za-z0-9_.]{1,200}")) {
-            super.onCreate(savedInstanceState);
-            finish();
-            return;
-        }
-        try {
-            PackageManager pm = getPackageManager();
-            label = String.valueOf(pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)));
-        } catch (PackageManager.NameNotFoundException e) {
-            label = pkg;
-        }
+    @Override protected void onCreate(Bundle savedInstanceState) {
+        pkg = getIntent().getStringExtra(Screens.EXTRA_PACKAGE);
+        boolean valid = AppCatalog.isValidPackage(pkg);
+        if (!valid) pkg = null;
+        else label = PlayerCard.appLabel(this, pkg);
         super.onCreate(savedInstanceState);
+        if (!valid) finish();
     }
 
-    @Override String title() {
+    @Override protected String title() {
         return label;
     }
 
-    @Override List<Entry> entries() {
-        List<Entry> list = new ArrayList<>();
+    @Override protected List<PanelEntry> entries() {
+        List<PanelEntry> list = new ArrayList<>();
         if (pkg == null) return list;
-        List<String> favorites = HomeApps.favorites(this);
+        List<String> favorites = AppCatalog.favorites(this);
         int at = favorites.indexOf(pkg);
-        Intent launch = HomeApps.launchIntent(getPackageManager(), pkg);
-        if (launch != null) {
-            list.add(new Entry("play", Ui.tr("Abrir", "Open"), "", false, () -> {
-                HomeApps.recordLaunch(this, pkg);
-                if (launch(launch)) finish();
+        if (Launcher.appIntent(getPackageManager(), pkg) != null) {
+            list.add(new PanelEntry("play", I18n.tr("Abrir", "Open"), () -> {
+                if (Launcher.openApp(this, pkg)) finish();
             }));
         }
         if (at < 0) {
-            list.add(new Entry("sparkles", Ui.tr("Adicionar aos favoritos", "Add to favorites"), "", false, () -> {
-                if (favorites.size() < HomeApps.MAX_FAVORITES) favorites.add(pkg);
-                HomeApps.setFavorites(this, favorites);
-                finish();
+            list.add(new PanelEntry("sparkles", I18n.tr("Adicionar aos favoritos", "Add to favorites"), () -> {
+                if (favorites.size() < AppCatalog.MAX_FAVORITES) favorites.add(pkg);
+                saveAndClose(favorites);
             }));
-            boolean hidden = HomeApps.hidden(this).contains(pkg);
-            list.add(new Entry("check", hidden ? Ui.tr("Mostrar em Todos os apps", "Show in All apps")
-                    : Ui.tr("Ocultar de Todos os apps", "Hide from All apps"), "", false, () -> {
-                HomeApps.setHidden(this, pkg, !hidden);
+            boolean hidden = Prefs.hidden(this).contains(pkg);
+            list.add(new PanelEntry("check", hidden ? I18n.tr("Mostrar em Todos os apps", "Show in All apps")
+                    : I18n.tr("Ocultar de Todos os apps", "Hide from All apps"), () -> {
+                AppCatalog.setHidden(this, pkg, !hidden);
                 finish();
             }));
         } else {
-            if (at > 0) list.add(new Entry("chevron_left", Ui.tr("Mover para a esquerda", "Move left"), "", false, () -> {
+            if (at > 0) list.add(new PanelEntry("chevron_left", I18n.tr("Mover para a esquerda", "Move left"), () -> {
                 favorites.add(at - 1, favorites.remove(at));
-                HomeApps.setFavorites(this, favorites);
-                finish();
+                saveAndClose(favorites);
             }));
-            if (at < favorites.size() - 1) list.add(new Entry("chevron_right", Ui.tr("Mover para a direita", "Move right"), "", false, () -> {
+            if (at < favorites.size() - 1) list.add(new PanelEntry("chevron_right", I18n.tr("Mover para a direita", "Move right"), () -> {
                 favorites.add(at + 1, favorites.remove(at));
-                HomeApps.setFavorites(this, favorites);
-                finish();
+                saveAndClose(favorites);
             }));
-            list.add(new Entry("check", Ui.tr("Remover dos favoritos", "Remove from favorites"), "", false, () -> {
+            list.add(new PanelEntry("check", I18n.tr("Remover dos favoritos", "Remove from favorites"), () -> {
                 favorites.remove(pkg);
-                HomeApps.setFavorites(this, favorites);
-                finish();
+                saveAndClose(favorites);
             }));
         }
-        list.add(new Entry("settings", Ui.tr("Informações do app", "App info"), "", false, () -> {
-            if (launch(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + pkg)))) finish();
+        list.add(new PanelEntry("settings", I18n.tr("Informações do app", "App info"), () -> {
+            if (Launcher.startOrSay(this, Launcher.appDetails(pkg))) finish();
         }));
-        if (HomeApps.launchIntent(getPackageManager(), "com.android.vending") != null) {
-            list.add(new Entry("apps", Ui.tr("Ver na Play Store", "View in Play Store"), "", false, () -> {
-                Intent store = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + pkg))
-                        .setPackage("com.android.vending");
-                if (launch(store)) finish();
+        if (AppCatalog.hasPlayStore(this)) {
+            list.add(new PanelEntry("apps", I18n.tr("Ver na Play Store", "View in Play Store"), () -> {
+                if (Launcher.startOrSay(this, Launcher.playStorePage(pkg))) finish();
             }));
         }
         if (!isSystem()) {
-            list.add(new Entry("bell", Ui.tr("Desinstalar", "Uninstall"), "", false, () -> {
-                if (launch(new Intent(Intent.ACTION_DELETE, Uri.parse("package:" + pkg)))) finish();
+            list.add(new PanelEntry("bell", I18n.tr("Desinstalar", "Uninstall"), () -> {
+                if (Launcher.startOrSay(this, Launcher.uninstall(pkg))) finish();
             }));
         }
         return list;
+    }
+
+    private void saveAndClose(List<String> favorites) {
+        AppCatalog.setFavorites(this, favorites);
+        finish();
     }
 
     private boolean isSystem() {

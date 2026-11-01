@@ -1,28 +1,30 @@
-import os
 from pathlib import Path
-import shutil
-import subprocess
-import tempfile
+import re
 import unittest
 import xml.etree.ElementTree as ET
 
+import jvm
+
 ROOT = Path(__file__).resolve().parents[1]
 ANDROID = "{http://schemas.android.com/apk/res/android}"
+SECURE_WRITER = ROOT / "app/src/io/hestia/tv/power/SleepDelay.java"
 
 
 class AppPolicyTests(unittest.TestCase):
-    def test_manifest_has_no_boot_jobs_or_privileged_permissions(self):
+    def test_manifest_has_no_boot_jobs_or_unexpected_permissions(self):
         root = ET.parse(ROOT / "app/AndroidManifest.xml").getroot()
         self.assertEqual({p.get(ANDROID + "name") for p in root.findall("uses-permission")},
                          {"android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE",
                           # User-confirmed uninstall from the app menu (Android shows its own dialog).
-                          "android.permission.REQUEST_DELETE_PACKAGES"})
+                          "android.permission.REQUEST_DELETE_PACKAGES",
+                          # Quick panel › Sleep after, once granted over ADB: docs/adr/001.
+                          "android.permission.WRITE_SECURE_SETTINGS"})
         app = root.find("application")
         self.assertEqual(app.get(ANDROID + "allowBackup"), "false")
         self.assertEqual(app.get(ANDROID + "usesCleartextTraffic"), "false")
         self.assertNotEqual(app.get(ANDROID + "debuggable"), "true")
         self.assertEqual(app.findall("receiver"), [])
-        # Screensaver, (empty) media listener and the Settings-key service, each bound by the system alone.
+        # Screensaver, (empty) media listener and the remote keys service, each bound by the system alone.
         self.assertEqual({s.get(ANDROID + "permission") for s in app.findall("service")},
                          {"android.permission.BIND_DREAM_SERVICE",
                           "android.permission.BIND_NOTIFICATION_LISTENER_SERVICE",
@@ -38,38 +40,41 @@ class AppPolicyTests(unittest.TestCase):
     def test_no_app_side_shell_or_adb(self):
         for path in (ROOT / "app/src").rglob("*.java"):
             for forbidden in ("new Socket(", "new ProcessBuilder(", "Runtime.getRuntime()", "pm disable-user",
-                              "127.0.0.1", "class Adb", "WRITE_SECURE_SETTINGS"):
+                              "127.0.0.1", "class Adb"):
                 self.assertNotIn(forbidden, path.read_text(), str(path))
 
+    def test_only_the_two_sleep_settings_can_be_written(self):
+        writers = re.compile(r"Settings\.(Secure|Global|System)\.put")
+        for path in (ROOT / "app/src").rglob("*.java"):
+            if path != SECURE_WRITER:
+                self.assertIsNone(writers.search(path.read_text()), str(path))
+        source = SECURE_WRITER.read_text()
+        self.assertEqual(set(re.findall(r"Settings\.(\w+)\.put\w+\(c\.getContentResolver\(\), (\w+),", source)),
+                         {("Secure", "SLEEP"), ("Secure", "ATTENTIVE")})
+        self.assertIn('SLEEP = "sleep_timeout", ATTENTIVE = "attentive_timeout"', source)
+        self.assertEqual(len(writers.findall(source)), 2)
+
     def test_network_boundaries_with_real_jvm(self):
-        local = next((p for p in (Path.home() / ".local/share/hestia/jdk17",
-                                  Path.home() / ".local/share/free-my-tv/jdk17") if p.exists()),
-                     Path.home() / ".local/share/hestia/jdk17")
-        java_home = Path(os.environ.get("JAVA_HOME", str(local)))
-        javac = str(java_home / "bin/javac") if (java_home / "bin/javac").exists() else shutil.which("javac")
-        java = str(java_home / "bin/java") if (java_home / "bin/java").exists() else shutil.which("java")
-        self.assertTrue(javac and java, "JDK required for network boundary tests")
-        with tempfile.TemporaryDirectory() as directory:
-            subprocess.run([javac, "-d", directory, str(ROOT / "app/src/io/hestia/tv/Net.java"),
-                            str(ROOT / "tests/java/NetTest.java")], check=True, capture_output=True, text=True)
-            result = subprocess.run([java, "-cp", directory, "io.hestia.tv.NetTest"],
-                                    check=True, capture_output=True, text=True)
-            self.assertIn("checks passed", result.stdout)
+        self.assertIn("checks passed", jvm.run("NetTest", "data/Net.java"))
 
     def test_feed_text_with_real_jvm(self):
-        local = next((p for p in (Path.home() / ".local/share/hestia/jdk17",
-                                  Path.home() / ".local/share/free-my-tv/jdk17") if p.exists()),
-                     Path.home() / ".local/share/hestia/jdk17")
-        java_home = Path(os.environ.get("JAVA_HOME", str(local)))
-        javac = str(java_home / "bin/javac") if (java_home / "bin/javac").exists() else shutil.which("javac")
-        java = str(java_home / "bin/java") if (java_home / "bin/java").exists() else shutil.which("java")
-        self.assertTrue(javac and java, "JDK required for feed text tests")
-        with tempfile.TemporaryDirectory() as directory:
-            subprocess.run([javac, "-d", directory, str(ROOT / "app/src/io/hestia/tv/FeedText.java"),
-                            str(ROOT / "tests/java/FeedTextTest.java")], check=True, capture_output=True, text=True)
-            result = subprocess.run([java, "-cp", directory, "io.hestia.tv.FeedTextTest"],
-                                    check=True, capture_output=True, text=True)
-            self.assertIn("checks passed", result.stdout)
+        self.assertIn("checks passed", jvm.run("FeedTextTest", "data/FeedText.java"))
+
+    def test_data_logic_with_real_jvm(self):
+        self.assertIn("checks passed", jvm.run("DataLogicTest", "data/Freshness.java", "data/WeatherText.java",
+                                               "core/I18n.java"))
+
+    def test_core_logic_with_real_jvm(self):
+        self.assertIn("checks passed", jvm.run("CoreLogicTest", "core/I18n.java", "core/TimeText.java"))
+
+    def test_ui_logic_with_real_jvm(self):
+        self.assertIn("checks passed", jvm.run("UiLogicTest", "ui/Colors.java", "ui/Spring.java"))
+
+    def test_sleep_policy_with_real_jvm(self):
+        self.assertIn("checks passed", jvm.run("PowerLogicTest", "power/SleepPolicy.java"))
+
+    def test_key_actions_with_real_jvm(self):
+        self.assertIn("checks passed", jvm.run("RemoteLogicTest", "remote/KeyAction.java"))
 
 
 if __name__ == "__main__":

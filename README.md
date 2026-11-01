@@ -55,7 +55,7 @@ Hestia, déesse grecque du **foyer**, remplace l’accueil Google TV par un écr
 | ⭐ **Apps favorites** | Première rangée, choisie et ordonnée dans les réglages |
 | 📺 **TV & entrées** | TV en direct, HDMI (atténués s’ils sont débranchés), recherche vocale, Play Store, réglages — cartes colorées |
 | 🗂️ **Toutes les apps** | Tri A–Z, les plus utilisées ou récentes ; apps masquables |
-| 🎛️ **Panneau rapide** | Lecteur (pochette, progression, ⏮ ⏯ ⏭), sources, image, son, réseau, accessoires |
+| 🎛️ **Panneau rapide** | Lecteur (pochette, progression, ⏮ ⏯ ⏭), sources, délai de mise en veille, image, son, réseau, accessoires |
 | 📋 **Menu d’app** | Appui long OK : favoris, déplacer, masquer, infos, Play Store, désinstaller |
 | 🌙 **Économiseur** | Diaporama 45 s par photo, zoom lent, heure, météo et une actu |
 | 🌍 **Langues** | Français, English, Português — automatique selon la TV |
@@ -65,7 +65,8 @@ Hestia, déesse grecque du **foyer**, remplace l’accueil Google TV par un écr
 | Touche | Par défaut | Configurable |
 |---|---|---|
 | **Réglages ⚙️** | Panneau rapide — sur l’accueil *et dans les apps* | ✅ |
-| **TV** | TV en direct (depuis l’accueil) | ✅ |
+| **TV** | TV en direct — sur l’accueil *et dans les apps* | ✅ |
+| **TV (appui long)** | TV en direct, ou l’app de votre choix — sur l’accueil *et dans les apps* | ✅ |
 | **Home (appui long)** | Panneau rapide, partout | ✅ |
 | **OK (appui long)** | Menu de l’app sélectionnée | — |
 
@@ -102,28 +103,30 @@ temperature=C      # C, F ou auto
 
 ## 🔐 Vie privée & sécurité
 
-- **Réseau** : `api.open-meteo.com`, `www.bing.com` et les flux RSS listés dans `Net.java` — HTTPS uniquement,
+- **Réseau** : `api.open-meteo.com`, `www.bing.com` et les flux RSS listés dans `data/Net.java` — HTTPS uniquement,
   sans redirection, tailles et délais bornés, erreurs sans URL ni secret.
 - **Liens d’actus** : seuls des liens `https` simples sont ouverts, et uniquement à votre demande (testé sur JVM).
 - **Permissions** : Internet, état du réseau, et demande de désinstallation (Android affiche sa confirmation).
 - **Accès facultatifs**, activés une fois par ADB et réversibles :
   - *notifications* → uniquement pour le lecteur du panneau rapide ; aucune notification n’est lue ;
-  - *accessibilité* → uniquement pour la touche Réglages dans les autres apps ; aucun contenu d’écran n’est lu.
-- **Rien dans l’app** ne désactive de paquet, ne modifie de réglage système ni n’ouvre de shell.
+  - *accessibilité* → uniquement pour les touches TV et Réglages dans les autres apps ; aucun contenu d’écran n’est lu ;
+  - *réglages sécurisés* → uniquement pour les deux délais de mise en veille, sur OK dans le panneau rapide
+    ([décision](docs/adr/001-write-secure-settings.md)). Sans cet accès, la ligne ouvre la page de la TV.
+- **Rien dans l’app** ne désactive de paquet ni n’ouvre de shell, et aucun autre réglage système n’est modifié.
 
 ## 🗺️ Le code en bref
 
 ```
-app/src/io/hestia/tv/
-├── HomeView.java            écran d’accueil (rangées, focus, fondu des bords, actus)
-├── QuickPanelActivity       panneau rapide + lecteur média   ← PanelActivity (panneaux réutilisables)
-├── SettingsActivity         réglages, grilles favoris / apps masquées
-├── DreamView · Screensaver  économiseur
-├── Photos · News · HomeData photo du jour, actus RSS, météo (cache disque, rafraîchis si visibles)
-├── RemoteKeys(+Service)     touches de la télécommande
-└── Net · FeedText           frontière réseau et validation des flux (sans Android, testées sur JVM)
+app/src/io/hestia/tv/        activités et services du manifeste, fins
+├── home · settings · news · dream   les écrans
+├── media · panel · ui               lecteur, panneaux, boîte à outils du dessin
+├── remote · power · apps · data     touches, veille, apps et entrées, météo / actus / photos
+└── core                             préférences, langue, heure, écrans
 tools/  tv_safe.py · vectorize_logo.py · make_hestia_art.py · make_symbols.py
 ```
+
+Couches : **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**. Briques à réutiliser : **[docs/BRIQUES.md](docs/BRIQUES.md)**.
+Un test fait respecter les deux.
 
 Le paquet reste `io.hestia.tv` : le changer créerait une autre app et ferait perdre le rôle d’accueil.
 

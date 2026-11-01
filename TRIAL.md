@@ -131,3 +131,13 @@ Le retour utilisateur signale des éléments manquants en haut. La capture confi
 - Touche Réglages dans les autres apps via `RemoteKeysService` (accessibilité, touches seulement) : activée par
   ADB (un cycle `accessibility_enabled` 0→1 a été nécessaire pour que le service soit lié). Les touches simulées par
   `input` ne passent pas par le filtre ; **validé par le propriétaire avec la vraie télécommande**.
+
+## Hestia 1.12-safe — architecture en couches — 1er novembre 2026
+
+- Code réorganisé en couches et briques (`docs/ARCHITECTURE.md`, `docs/BRIQUES.md`). Noms des composants du manifeste,
+  préférences et clé de signature inchangés. Tests et compilation verts ; **pas encore installée ni essayée sur la TV**.
+- Relevé en lecture seule sur la TV : `secure sleep_timeout=1139000` (20 min − 61 s), `secure attentive_timeout=14339000`
+  (4 h − 61 s), `system screen_off_timeout=600000`, télécommande `BT_RC933A_B3`. Aucun réglage modifié.
+- Ajouts à valider à la télécommande : ligne « Mise en veille » du panneau rapide (après `pm grant`, voir
+  SAFE-DEPLOYMENT.md ; la lecture de `sleep_timeout` par une app n’a pas pu être essayée), touche TV et appui long dans
+  les apps (le filtre d’accessibilité doit recevoir le code 4001 ; l’appui long est chronométré à 600 ms).

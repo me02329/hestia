@@ -40,12 +40,19 @@ python3 tools/tv_safe.py disable-stock-home --adb "$ADB" --serial "$TV_SERIAL" -
 "$ADB" -s "$TV_SERIAL" shell cmd notification allow_listener io.hestia.tv/io.hestia.tv.MediaListener   # lecteur
 ```
 
-Touche Réglages dans les autres apps (facultatif) : service d’accessibilité limité aux touches. Vérifier d’abord la
+Touches TV et Réglages dans les autres apps (facultatif) : service d’accessibilité limité aux touches. Vérifier d’abord la
 valeur existante (`settings get secure enabled_accessibility_services`) et l’ajouter avec `:` si elle n’est pas vide.
 
 ```sh
 "$ADB" -s "$TV_SERIAL" shell settings put secure enabled_accessibility_services io.hestia.tv/io.hestia.tv.RemoteKeysService
 "$ADB" -s "$TV_SERIAL" shell settings put secure accessibility_enabled 1
+```
+
+Délai de mise en veille modifiable depuis le panneau rapide (facultatif ; sans cela, la ligne ouvre la page de la TV,
+voir [la décision](docs/adr/001-write-secure-settings.md)) :
+
+```sh
+"$ADB" -s "$TV_SERIAL" shell pm grant io.hestia.tv android.permission.WRITE_SECURE_SETTINGS
 ```
 
 L’économiseur Ambient de Google cesse de fonctionner sans son launcher (la TV passait directement en veille) :
@@ -64,6 +71,6 @@ d’origine. Si la bascule a été faite à la main (sans fichier `.stock.json`,
 ## Ce qui est vérifié
 
 - Tests simulés (`python3 -m unittest discover -s tests -v`) : identité incorrecte, état concurrent, écriture refusée,
-  coupure ADB, reprise, journal, bascule/retour du launcher d’origine, paquets étrangers refusés ; règles réseau et
-  filtrage des liens RSS sur une JVM réelle.
+  coupure ADB, reprise, journal, bascule/retour du launcher d’origine, paquets étrangers refusés ; règles réseau,
+  filtrage des liens RSS et logique sans Android sur une JVM réelle ; couches et briques (`tests/test_architecture.py`).
 - Essais réels sur la TV : voir [TRIAL.md](TRIAL.md). Une compilation réussie ne remplace pas un essai sur la TV.

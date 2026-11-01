@@ -1,24 +1,27 @@
 package io.hestia.tv;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
-import android.widget.TextView;
-import android.widget.LinearLayout;
 import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import io.hestia.tv.apps.HomeRole;
+import io.hestia.tv.core.I18n;
+import io.hestia.tv.core.Watchdog;
+import io.hestia.tv.home.HomeView;
+import io.hestia.tv.ui.HestiaActivity;
 
 /** Home UI with a dependency-light recovery screen after repeated Java crashes. */
-public class HomeActivity extends Activity {
+public class HomeActivity extends HestiaActivity {
     private HomeView home;
 
     @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Watchdog.install(this);
-        Ui.init(this);
         if (Watchdog.crashedTooOften(this)) {
             showRecovery();
             return;
@@ -39,23 +42,17 @@ public class HomeActivity extends Activity {
         box.setPadding(96, 96, 96, 96);
         box.setBackgroundColor(Color.rgb(14, 20, 32));
         TextView t = new TextView(this);
-        t.setText(Ui.tr("Hestia travou várias vezes.\nO início padrão não foi alterado.",
+        t.setText(I18n.tr("Hestia travou várias vezes.\nO início padrão não foi alterado.",
                 "Hestia crashed several times.\nThe default home screen has not been changed."));
         t.setTextColor(Color.WHITE);
         t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
         t.setGravity(Gravity.CENTER);
         t.setPadding(0, 0, 0, 48);
         box.addView(t);
-        Button first = button(box, Ui.tr("Ajustes da TV", "TV Settings"), () -> HomeMode.openSettings(this));
-        button(box, Ui.tr("Aplicativos (reativar o Google TV)", "Apps (re-enable Google TV)"), () -> {
-            try {
-                startActivity(new Intent(android.provider.Settings.ACTION_MANAGE_APPLICATIONS_SETTINGS));
-            } catch (RuntimeException e) {
-                HomeMode.openSettings(this);
-            }
-        });
-        button(box, Ui.tr("Outro início", "Another home"), () -> HomeMode.openOtherHome(this));
-        button(box, Ui.tr("Tentar Hestia de novo", "Retry Hestia"), () -> { Watchdog.clear(this); recreate(); });
+        Button first = button(box, I18n.tr("Ajustes da TV", "TV Settings"), () -> HomeRole.openTvSettings(this));
+        button(box, I18n.tr("Aplicativos (reativar o Google TV)", "Apps (re-enable Google TV)"), () -> HomeRole.openAppList(this));
+        button(box, I18n.tr("Outro início", "Another home"), () -> HomeRole.openOtherHome(this));
+        button(box, I18n.tr("Tentar Hestia de novo", "Retry Hestia"), () -> { Watchdog.clear(this); recreate(); });
         setContentView(box);
         first.requestFocus();
     }
@@ -97,5 +94,4 @@ public class HomeActivity extends Activity {
         if (home != null && home.onKey(event)) return true;
         return super.dispatchKeyEvent(event);
     }
-
 }

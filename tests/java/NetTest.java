@@ -1,4 +1,4 @@
-package io.hestia.tv;
+package io.hestia.tv.data;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -10,6 +10,7 @@ public final class NetTest {
     private static void require(boolean condition) {
         if (!condition) throw new AssertionError();
     }
+
     public static void main(String[] args) throws Exception {
         for (String address : new String[] {"http://www.bing.com/", "https://example.com/",
                 "https://www.bing.com.evil.test/", "https://user@www.bing.com/",
@@ -31,6 +32,6 @@ public final class NetTest {
         } catch (IOException expected) {}
         require(!Net.safeError(new IOException("https://www.bing.com/?token=secret")).contains("secret"));
         require(Net.safeError(new IOException("HTTP 401")).equals("HTTP 401"));
-        System.out.println("Network boundary checks passed (offline).");
+        System.out.println("checks passed");
     }
 }
