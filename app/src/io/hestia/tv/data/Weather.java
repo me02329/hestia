@@ -3,18 +3,13 @@ package io.hestia.tv.data;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import io.hestia.tv.core.Config;
 import io.hestia.tv.core.Prefs;
 
 import org.json.JSONObject;
 
-import io.hestia.tv.core.Config;
-
-/** The current weather for your location (Open-Meteo, every 30 min, no key). Location from config.properties. */
+/** The current weather for your city (Open-Meteo, every 30 min, no key). The city is chosen in the settings (CityActivity). */
 public final class Weather extends Feed {
-    private static final String URL = "https://api.open-meteo.com/v1/forecast?latitude=" + Config.LATITUDE
-            + "&longitude=" + Config.LONGITUDE
-            + "&current=temperature_2m,weather_code,is_day&timezone=auto";
-
     public static final class Reading {
         public double temp = Double.NaN;
         public int code = -1;
@@ -28,11 +23,13 @@ public final class Weather extends Feed {
         return instance;
     }
 
+    private final Context context;
     private final SharedPreferences cache;
     private volatile Reading now = new Reading();
 
     private Weather(Context c) {
         super("weather", 30 * 60_000L);
+        context = c;
         cache = Prefs.cache(c, "homedata");
         try {
             String saved = cache.getString("weather", null);
@@ -47,7 +44,10 @@ public final class Weather extends Feed {
     }
 
     @Override protected void fetch() throws Exception {
-        String body = Net.json(URL);
+        String latitude = Prefs.latitude(context), longitude = Prefs.longitude(context);
+        String body = Net.json("https://api.open-meteo.com/v1/forecast?latitude=" + latitude + "&longitude=" + longitude
+                + "&current=temperature_2m,weather_code,is_day&timezone=auto");
+        if (!latitude.equals(Prefs.latitude(context)) || !longitude.equals(Prefs.longitude(context))) return;   // moved meanwhile
         now = parse(body);
         fetchedAt = System.currentTimeMillis();
         cache.edit().putString("weather", body).putLong("weatherAt", fetchedAt).apply();
@@ -63,11 +63,26 @@ public final class Weather extends Feed {
         return r;
     }
 
+    /** The city's name; "" when none was given. */
+    public String place() {
+        return Prefs.cityName(context);
+    }
+
+    /** Makes this the city of the weather: the old reading goes at once, the new one is fetched. */
+    public void moveTo(City city) {
+        Prefs.setCity(context, city.name, City.coordinate(city.latitude), City.coordinate(city.longitude));
+        cache.edit().remove("weather").remove("weatherAt").apply();
+        now = new Reading();
+        fetchedAt = 0;
+        notifyListeners();
+        refreshIfStale();
+    }
+
     /** "Paris · 12° Nuageux" for the panels; "" before the first reading. */
     public String summary() {
         Reading r = now;
         if (Double.isNaN(r.temp)) return "";
-        String city = Config.CITY.trim();
+        String city = place();
         return (city.isEmpty() ? "" : city + " · ") + WeatherText.degrees(r.temp, Config.TEMPERATURE) + " "
                 + WeatherText.condition(r.code, r.isDay);
     }

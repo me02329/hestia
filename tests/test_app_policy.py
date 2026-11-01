@@ -62,7 +62,7 @@ class AppPolicyTests(unittest.TestCase):
 
     def test_data_logic_with_real_jvm(self):
         self.assertIn("checks passed", jvm.run("DataLogicTest", "data/Freshness.java", "data/WeatherText.java",
-                                               "core/I18n.java"))
+                                               "data/City.java", "data/FeedText.java", "core/I18n.java"))
 
     def test_core_logic_with_real_jvm(self):
         self.assertIn("checks passed", jvm.run("CoreLogicTest", "core/I18n.java", "core/TimeText.java"))

@@ -73,6 +73,11 @@ final class PanelView extends CanvasView {
         retarget(true);
     }
 
+    void focusEntry(int index) {
+        focus = Math.max(0, Math.min(index, entries.size() - 1));
+        retarget(false);
+    }
+
     private float headerTop() {
         return activity.subtitle().isEmpty() ? 150 : 190;
     }

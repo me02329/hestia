@@ -50,7 +50,7 @@ Hestia, déesse grecque du **foyer**, remplace l’accueil Google TV par un écr
 | | |
 |---|---|
 | 🌄 **Fond vivant** | Photo du jour (archive Bing), fondu toutes les 2 minutes |
-| 🕰️ **En-tête** | Heure 24 h, date, emblème Hestia, météo de votre ville (Open-Meteo) |
+| 🕰️ **En-tête** | Heure 24 h, date, emblème Hestia, météo de la ville choisie dans les réglages (Open-Meteo) |
 | 🛡️ **Actus cyber** | The Hacker News, BleepingComputer, SecurityWeek, CERT-FR, ZATAZ — un titre toutes les 12 s ; ↑ puis OK pour la liste |
 | ⭐ **Apps favorites** | Première rangée, choisie et ordonnée dans les réglages |
 | 📺 **TV & entrées** | TV en direct, HDMI (atténués s’ils sont débranchés), recherche vocale, Play Store, réglages — cartes colorées |
@@ -83,12 +83,12 @@ python3 -m unittest discover -s tests -v   # tests simulés + contrôles réseau
 ./build.sh                                  # crée config.properties puis Hestia.apk (+ .sha256)
 ```
 
-Renseignez votre ville dans `config.properties`, relancez `./build.sh`, puis suivez
+Vous pourrez choisir votre ville sur la TV (Réglages Hestia › Ville). Suivez ensuite
 **[SAFE-DEPLOYMENT.md](SAFE-DEPLOYMENT.md)** : sauvegarde de la TV, installation, bascule de l’accueil et retour arrière,
 le tout via `tools/tv_safe.py` (identité de la TV vérifiée, chaque écriture relue, journal de reprise).
 
 ```properties
-# config.properties — aucune clé nécessaire
+# config.properties (facultatif) — aucune clé nécessaire ; la ville choisie sur la TV a priorité
 latitude=48.8566
 longitude=2.3522
 city=Paris
@@ -103,7 +103,7 @@ temperature=C      # C, F ou auto
 
 ## 🔐 Vie privée & sécurité
 
-- **Réseau** : `api.open-meteo.com`, `www.bing.com` et les flux RSS listés dans `data/Net.java` — HTTPS uniquement,
+- **Réseau** : `api.open-meteo.com`, `geocoding-api.open-meteo.com` (uniquement le nom tapé en cherchant une ville), `www.bing.com` et les flux RSS listés dans `data/Net.java` — HTTPS uniquement,
   sans redirection, tailles et délais bornés, erreurs sans URL ni secret.
 - **Liens d’actus** : seuls des liens `https` simples sont ouverts, et uniquement à votre demande (testé sur JVM).
 - **Permissions** : Internet, état du réseau, et demande de désinstallation (Android affiche sa confirmation).

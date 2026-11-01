@@ -33,7 +33,7 @@ ONE_DOOR = {
     r"new HttpURLConnection|openConnection\(": {"data/Net.java"},
     r"Thread\(": set(),
 }
-PLAIN_JAVA = ["core/I18n.java", "core/TimeText.java", "data/FeedText.java", "data/Freshness.java", "data/Net.java",
+PLAIN_JAVA = ["core/I18n.java", "core/TimeText.java", "data/City.java", "data/FeedText.java", "data/Freshness.java", "data/Net.java",
               "data/WeatherText.java", "power/SleepPolicy.java", "remote/KeyAction.java", "ui/Colors.java",
               "ui/Spring.java"]
 MAX_LINES = 500

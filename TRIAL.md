@@ -147,3 +147,11 @@ Le retour utilisateur signale des éléments manquants en haut. La capture confi
   `TclAppBoot` refuse la connexion (`callee_does't_have_OP_AUTO_START_permission`, `AUTO_START: ignore`). Hestia relancée,
   basculer `accessibility_enabled` ne suffit pas ; réécrire la liste des services et le listener reconnecte les deux
   (procédure dans SAFE-DEPLOYMENT.md). Comportement après un redémarrage de la TV non vérifié.
+
+## Hestia 1.13-safe — ville choisie dans l’app — 1er novembre 2026
+
+- Réglages › Ville : recherche par nom (géocodage Open-Meteo), avec le clavier de la TV. La ville `config.properties`
+  reste la valeur par défaut. Tests et compilation verts ; **pas encore installée ni essayée sur la TV** (clavier à
+  valider à la télécommande).
+- Autostart TCL autorisé sur la TV à la demande du propriétaire (`appops set io.hestia.tv AUTO_START allow`, valeur
+  précédente `ignore`). Effet à vérifier à la prochaine mise à jour et au prochain redémarrage.

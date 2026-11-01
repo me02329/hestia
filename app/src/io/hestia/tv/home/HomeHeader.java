@@ -147,7 +147,7 @@ final class HomeHeader {
             float iconX = right - tempPaint.measureText(temp) - 44;
             Symbols.draw(context, c, Symbols.weather(wx.code, wx.isDay), iconX, 150 - Paints.halfCap(tempPaint),
                     56, Colors.alpha(Color.WHITE, alpha));
-            String where = Config.CITY.trim();
+            String where = weather.place();
             String line = WeatherText.condition(wx.code, wx.isDay);
             if (!where.isEmpty()) line = where + " · " + line;
             c.drawText(line, right, 196, smallPaint);

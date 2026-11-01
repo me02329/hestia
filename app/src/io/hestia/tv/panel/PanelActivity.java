@@ -52,6 +52,11 @@ public abstract class PanelActivity extends HestiaActivity {
         view.invalidate();
     }
 
+    /** Moves the focus to a row. */
+    protected final void focusEntry(int index) {
+        view.focusEntry(index);
+    }
+
     /** Rebuilds the list (something it shows changed). */
     protected final void refresh() {
         view.setEntries(entries());

@@ -62,7 +62,13 @@ d’où l’économiseur Hestia. L’accès aux notifications sert uniquement au
 
 La mise à jour arrête Hestia, et le firmware TCL refuse alors de reconnecter ses services tant que l’autostart n’est pas
 autorisé (`TclAppBoot: forbid bind service`, logcat). Les touches dans les apps et le lecteur du panneau rapide ne
-marchent plus. Une fois Hestia relancée (touche Home), reconnecter les deux :
+marchent plus. Autoriser l’autostart (une fois ; retour : même commande avec `ignore`) :
+
+```sh
+"$ADB" -s "$TV_SERIAL" shell appops set io.hestia.tv AUTO_START allow
+```
+
+Si les services restent déconnectés après une mise à jour, une fois Hestia relancée (touche Home), reconnecter les deux :
 
 ```sh
 "$ADB" -s "$TV_SERIAL" shell settings delete secure enabled_accessibility_services

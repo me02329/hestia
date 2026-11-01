@@ -89,6 +89,10 @@ public final class I18n {
             {"Home (press and hold)", "Home (appui long)"}, {"Quick panel", "Panneau rapide"}, {"Search", "Rechercher"},
             {"free of", "libres sur"}, {"Storage", "Stockage"},
             {"Sleep after", "Mise en veille"}, {"Never", "Jamais"},
+            {"City", "Ville"}, {"City name", "Nom de la ville"}, {"No name", "Sans nom"}, {"Cancel", "Annuler"},
+            {"Search for a city…", "Rechercher une ville…"}, {"Searching…", "Recherche…"},
+            {"Search failed. Check the network.", "Échec de la recherche. Vérifie le réseau."},
+            {"No city found.", "Aucune ville trouvée."},
             {"TV button (press and hold)", "Touche TV (appui long)"},
             {"In any app, with the accessibility service", "Dans toute app, avec le service d’accessibilité"},
         };

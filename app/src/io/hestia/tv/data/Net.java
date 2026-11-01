@@ -19,7 +19,7 @@ public final class Net {
     static final int JSON_LIMIT = 2 * 1024 * 1024;
     static final int IMAGE_LIMIT = 16 * 1024 * 1024;
     private static final Set<String> HOSTS = new HashSet<>(Arrays.asList(
-            "api.open-meteo.com", "www.bing.com",
+            "api.open-meteo.com", "geocoding-api.open-meteo.com", "www.bing.com",
             // Cybersecurity RSS feeds (News)
             "feeds.feedburner.com", "www.bleepingcomputer.com", "www.securityweek.com", "cert.cyber.gouv.fr",
             "www.zataz.com"));

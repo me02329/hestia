@@ -29,6 +29,7 @@ import io.hestia.tv.core.Keys;
 import io.hestia.tv.core.Prefs;
 import io.hestia.tv.core.Screens;
 import io.hestia.tv.data.Photos;
+import io.hestia.tv.data.Weather;
 import io.hestia.tv.ui.Backdrop;
 import io.hestia.tv.ui.CanvasView;
 import io.hestia.tv.ui.Colors;
@@ -56,7 +57,7 @@ public final class SettingsView extends CanvasView {
     private static final float MARGIN = 120;
     private static final String[] SORTS = {AppCatalog.SORT_NAME, AppCatalog.SORT_USAGE, AppCatalog.SORT_RECENT};
     private static final String[] LANGUAGES = {I18n.AUTO, I18n.LANG_FR, I18n.LANG_EN, I18n.LANG_PT};
-    private static final float LIST_X = 920, LIST_R = W - MARGIN, LIST_TOP = 210, ROW_H = 80, ROW_GAP = 9;
+    private static final float LIST_X = 920, LIST_R = W - MARGIN, LIST_TOP = 210, ROW_H = 74, ROW_GAP = 9;
     private static final int GRID_COLS = 5;
     private static final float CARD_W = 300, CARD_H = 169, CARD_GAP = 36, GRID_TOP = 300, GRID_STEP = 250;
     private static final int ACCENT = 0xFFFFB347, INK = 0xFF15161A;
@@ -142,6 +143,10 @@ public final class SettingsView extends CanvasView {
             I18n.apply(choice);
             invalidate();
         }));
+        rows.add(new SettingsRow(() -> I18n.tr("Cidade", "City"), () -> {
+            String city = Weather.get(c).place();
+            return city.isEmpty() ? I18n.tr("Sem nome", "No name") : city;
+        }, () -> Launcher.startOver(activity, Screens.city(c))));
         rows.add(new SettingsRow(() -> I18n.tr("Notícias de cibersegurança", "Cyber news"),
                 () -> newsOn ? I18n.tr("Ligado", "On") : I18n.tr("Desligado", "Off"), () -> {
             newsOn = !newsOn;

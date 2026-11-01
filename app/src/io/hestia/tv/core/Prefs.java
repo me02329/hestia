@@ -76,6 +76,23 @@ public final class Prefs {
         home(c).edit().putString("key_" + key, action).apply();
     }
 
+    /** The city of the weather, as chosen in the settings; until then, config.properties. */
+    public static String cityName(Context c) {
+        return home(c).getString("city", Config.CITY.trim());
+    }
+
+    public static String latitude(Context c) {
+        return home(c).getString("latitude", Config.LATITUDE);
+    }
+
+    public static String longitude(Context c) {
+        return home(c).getString("longitude", Config.LONGITUDE);
+    }
+
+    public static void setCity(Context c, String name, String latitude, String longitude) {
+        home(c).edit().putString("city", name).putString("latitude", latitude).putString("longitude", longitude).apply();
+    }
+
     /** Counted by Hestia itself when it opens an app (no usage-stats permission). */
     public static void recordLaunch(Context c, String pkg) {
         SharedPreferences usage = usage(c);

@@ -26,6 +26,10 @@ public final class Screens {
         return screen(c, "SettingsActivity");
     }
 
+    public static Intent city(Context c) {
+        return screen(c, "CityActivity");
+    }
+
     public static Intent quickPanel(Context c) {
         return screen(c, "QuickPanelActivity");
     }

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="io.hestia.tv"
-    android:versionCode="13"
-    android:versionName="1.12-safe">
+    android:versionCode="14"
+    android:versionName="1.13-safe">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -138,6 +138,17 @@
         <!-- Settings › Remote buttons: what the TV (short, long) and Settings buttons and Home held down open. -->
         <activity
             android:name=".RemoteKeysActivity"
+            android:process=":home"
+            android:exported="false"
+            android:label="Hestia"
+            android:excludeFromRecents="true"
+            android:screenOrientation="landscape"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density|fontScale|locale|layoutDirection"
+            android:theme="@style/Hestia.Panel" />
+
+        <!-- Settings › City: the city of the weather. -->
+        <activity
+            android:name=".CityActivity"
             android:process=":home"
             android:exported="false"
             android:label="Hestia"
