@@ -155,3 +155,6 @@ Le retour utilisateur signale des éléments manquants en haut. La capture confi
   valider à la télécommande).
 - Autostart TCL autorisé sur la TV à la demande du propriétaire (`appops set io.hestia.tv AUTO_START allow`, valeur
   précédente `ignore`). Effet à vérifier à la prochaine mise à jour et au prochain redémarrage.
+- 1.13-safe installée sur la TV (`install -r`, Canal+ au premier plan, non interrompu). Avec l’autostart autorisé, les deux
+  services se reconnectent seuls après la mise à jour, sans crash ; permission de veille conservée. Effet après un
+  redémarrage de la TV non vérifié ; interface et clavier à valider à la télécommande.
