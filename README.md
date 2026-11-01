@@ -50,12 +50,14 @@ Hestia, déesse grecque du **foyer**, remplace l’accueil Google TV par un écr
 | | |
 |---|---|
 | 🌄 **Fond vivant** | Photo du jour (archive Bing), fondu toutes les 2 minutes |
-| 🕰️ **En-tête** | Heure 24 h, date, emblème Hestia, météo de votre ville (Open-Meteo) |
+| 🕰️ **En-tête** | Heure 24 h, date, emblème Hestia, météo de la ville choisie dans les réglages (Open-Meteo) |
 | 🛡️ **Actus cyber** | The Hacker News, BleepingComputer, SecurityWeek, CERT-FR, ZATAZ — un titre toutes les 12 s ; ↑ puis OK pour la liste |
 | ⭐ **Apps favorites** | Première rangée, choisie et ordonnée dans les réglages |
 | 📺 **TV & entrées** | TV en direct, HDMI (atténués s’ils sont débranchés), recherche vocale, Play Store, réglages — cartes colorées |
 | 🗂️ **Toutes les apps** | Tri A–Z, les plus utilisées ou récentes ; apps masquables |
-| 🎛️ **Panneau rapide** | Lecteur (pochette, progression, ⏮ ⏯ ⏭), sources, image, son, réseau, accessoires |
+| 🎵 **En lecture** | Une carte en tête de la rangée TV pour revenir à ce qui joue |
+| 🎛️ **Panneau rapide** | Lecteur (pochette, progression, ⏮ ⏯ ⏭), sources, minuteur « Éteindre dans », délais de veille et d’économiseur, prévisions, image, son, réseau, accessoires |
+| 🩺 **État** | Réglages › État : ce qui fonctionne vraiment, fraîcheur des données, nouvelle version |
 | 📋 **Menu d’app** | Appui long OK : favoris, déplacer, masquer, infos, Play Store, désinstaller |
 | 🌙 **Économiseur** | Diaporama 45 s par photo, zoom lent, heure, météo et une actu |
 | 🌍 **Langues** | Français, English, Português — automatique selon la TV |
@@ -65,7 +67,8 @@ Hestia, déesse grecque du **foyer**, remplace l’accueil Google TV par un écr
 | Touche | Par défaut | Configurable |
 |---|---|---|
 | **Réglages ⚙️** | Panneau rapide — sur l’accueil *et dans les apps* | ✅ |
-| **TV** | TV en direct (depuis l’accueil) | ✅ |
+| **TV** | TV en direct — sur l’accueil *et dans les apps* | ✅ |
+| **TV (appui long)** | TV en direct, ou l’app de votre choix — sur l’accueil *et dans les apps* | ✅ |
 | **Home (appui long)** | Panneau rapide, partout | ✅ |
 | **OK (appui long)** | Menu de l’app sélectionnée | — |
 
@@ -82,12 +85,12 @@ python3 -m unittest discover -s tests -v   # tests simulés + contrôles réseau
 ./build.sh                                  # crée config.properties puis Hestia.apk (+ .sha256)
 ```
 
-Renseignez votre ville dans `config.properties`, relancez `./build.sh`, puis suivez
+Vous pourrez choisir votre ville sur la TV (Réglages Hestia › Ville). Suivez ensuite
 **[SAFE-DEPLOYMENT.md](SAFE-DEPLOYMENT.md)** : sauvegarde de la TV, installation, bascule de l’accueil et retour arrière,
 le tout via `tools/tv_safe.py` (identité de la TV vérifiée, chaque écriture relue, journal de reprise).
 
 ```properties
-# config.properties — aucune clé nécessaire
+# config.properties (facultatif) — aucune clé nécessaire ; la ville choisie sur la TV a priorité
 latitude=48.8566
 longitude=2.3522
 city=Paris
@@ -98,32 +101,35 @@ temperature=C      # C, F ou auto
 > [!NOTE]
 > Sur certaines TV Google TV (dont la TCL G08), le launcher d’origine passe avant tout accueil choisi.
 > `tv_safe.py disable-stock-home` désactive alors **uniquement** le launcher Google et l’écran de récupération du
-> setup, en l’enregistrant ; `enable-stock-home` remet tout comme avant.
+> setup, en l’enregistrant ; `enable-stock-home` remet tout comme avant. `disable-services` allège aussi la TV
+> (recherche vocale, Agenda, AirPlay), voir [SAFE-DEPLOYMENT.md](SAFE-DEPLOYMENT.md).
 
 ## 🔐 Vie privée & sécurité
 
-- **Réseau** : `api.open-meteo.com`, `www.bing.com` et les flux RSS listés dans `Net.java` — HTTPS uniquement,
+- **Réseau** : `api.open-meteo.com`, `geocoding-api.open-meteo.com` (uniquement le nom tapé en cherchant une ville), `api.github.com` (nouvelle version, au plus une fois par jour, réglages ouverts), `www.bing.com` et les flux RSS listés dans `data/Net.java` — HTTPS uniquement,
   sans redirection, tailles et délais bornés, erreurs sans URL ni secret.
 - **Liens d’actus** : seuls des liens `https` simples sont ouverts, et uniquement à votre demande (testé sur JVM).
 - **Permissions** : Internet, état du réseau, et demande de désinstallation (Android affiche sa confirmation).
 - **Accès facultatifs**, activés une fois par ADB et réversibles :
   - *notifications* → uniquement pour le lecteur du panneau rapide ; aucune notification n’est lue ;
-  - *accessibilité* → uniquement pour la touche Réglages dans les autres apps ; aucun contenu d’écran n’est lu.
-- **Rien dans l’app** ne désactive de paquet, ne modifie de réglage système ni n’ouvre de shell.
+  - *accessibilité* → uniquement pour les touches TV et Réglages dans les autres apps et le minuteur d’extinction ; aucun contenu d’écran n’est lu ;
+  - *réglages sécurisés* → uniquement pour les délais de mise en veille et d’économiseur, sur OK dans le panneau rapide
+    ([décisions](docs/adr/)). Sans cet accès, ces lignes ouvrent les pages de la TV.
+- **Rien dans l’app** ne désactive de paquet ni n’ouvre de shell, et aucun autre réglage système n’est modifié.
 
 ## 🗺️ Le code en bref
 
 ```
-app/src/io/hestia/tv/
-├── HomeView.java            écran d’accueil (rangées, focus, fondu des bords, actus)
-├── QuickPanelActivity       panneau rapide + lecteur média   ← PanelActivity (panneaux réutilisables)
-├── SettingsActivity         réglages, grilles favoris / apps masquées
-├── DreamView · Screensaver  économiseur
-├── Photos · News · HomeData photo du jour, actus RSS, météo (cache disque, rafraîchis si visibles)
-├── RemoteKeys(+Service)     touches de la télécommande
-└── Net · FeedText           frontière réseau et validation des flux (sans Android, testées sur JVM)
+app/src/io/hestia/tv/        activités et services du manifeste, fins
+├── home · settings · news · dream   les écrans
+├── media · panel · ui               lecteur, panneaux, boîte à outils du dessin
+├── remote · power · apps · data     touches, veille, apps et entrées, météo / actus / photos
+└── core                             préférences, langue, heure, écrans
 tools/  tv_safe.py · vectorize_logo.py · make_hestia_art.py · make_symbols.py
 ```
+
+Couches : **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**. Briques à réutiliser : **[docs/BRIQUES.md](docs/BRIQUES.md)**.
+Un test fait respecter les deux.
 
 Le paquet reste `io.hestia.tv` : le changer créerait une autre app et ferait perdre le rôle d’accueil.
 

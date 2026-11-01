@@ -17,9 +17,8 @@ fi
 BT="$SDK/build-tools/34.0.0"
 AJ="$SDK/platforms/android-34/android.jar"
 [ -x "$BT/aapt2" ] && [ -f "$AJ" ] || { echo 'Install build-tools;34.0.0 and platforms;android-34.'; exit 1; }
-for jdk in "$HOME/.local/share/hestia/jdk17" "$HOME/.local/share/free-my-tv/jdk17"; do   # second: older setups
-  if [ -z "${JAVA_HOME:-}" ] && [ -x "$jdk/bin/javac" ]; then export JAVA_HOME="$jdk"; fi
-done
+jdk="$HOME/.local/share/hestia/jdk17"
+if [ -z "${JAVA_HOME:-}" ] && [ -x "$jdk/bin/javac" ]; then export JAVA_HOME="$jdk"; fi
 if [ -n "${JAVA_HOME:-}" ]; then export PATH="$JAVA_HOME/bin:$PATH"; fi
 JAVAC="${JAVA_HOME:+$JAVA_HOME/bin/}javac"
 KEYTOOL="${JAVA_HOME:+$JAVA_HOME/bin/}keytool"
@@ -35,8 +34,8 @@ if [ ! -f config.properties ]; then
   cp config.example.properties config.properties
   echo "Created config.properties: set your city there (optional), then build again."
 fi
-mkdir -p out/gen/io/hestia/tv
-python3 tools/generate_config.py config.properties out/gen/io/hestia/tv/Config.java
+mkdir -p out/gen/io/hestia/tv/core
+python3 tools/generate_config.py config.properties out/gen/io/hestia/tv/core/Config.java
 # Only generated class files are cleaned; source/configuration/signing files are never removed.
 if [ -d out/classes ]; then find out/classes -type f -name '*.class' -delete; fi
 mkdir -p out/classes

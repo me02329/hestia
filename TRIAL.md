@@ -131,3 +131,44 @@ Le retour utilisateur signale des éléments manquants en haut. La capture confi
 - Touche Réglages dans les autres apps via `RemoteKeysService` (accessibilité, touches seulement) : activée par
   ADB (un cycle `accessibility_enabled` 0→1 a été nécessaire pour que le service soit lié). Les touches simulées par
   `input` ne passent pas par le filtre ; **validé par le propriétaire avec la vraie télécommande**.
+
+## Hestia 1.12-safe — architecture en couches — 1er novembre 2026
+
+- Code réorganisé en couches et briques (`docs/ARCHITECTURE.md`, `docs/BRIQUES.md`). Noms des composants du manifeste,
+  préférences et clé de signature inchangés. Tests et compilation verts ; **pas encore installée ni essayée sur la TV**.
+- Relevé en lecture seule sur la TV : `secure sleep_timeout=1139000` (20 min − 61 s), `secure attentive_timeout=14339000`
+  (4 h − 61 s), `system screen_off_timeout=600000`, télécommande `BT_RC933A_B3`. Aucun réglage modifié.
+- Ajouts à valider à la télécommande : ligne « Mise en veille » du panneau rapide (après `pm grant`, voir
+  SAFE-DEPLOYMENT.md ; la lecture de `sleep_timeout` par une app n’a pas pu être essayée), touche TV et appui long dans
+  les apps (le filtre d’accessibilité doit recevoir le code 4001 ; l’appui long est chronométré à 600 ms).
+- Installée sur la TV le 1er novembre 2026 (`install -r`, Canal+ au premier plan, non interrompu) et lancée par le
+  propriétaire : version 1.12-safe affichée, aucun crash dans logcat. `pm grant WRITE_SECURE_SETTINGS` accordé.
+- Après la mise à jour, `RemoteKeysService` et `MediaListener` déconnectés et `accessibility_enabled` à 0 :
+  `TclAppBoot` refuse la connexion (`callee_does't_have_OP_AUTO_START_permission`, `AUTO_START: ignore`). Hestia relancée,
+  basculer `accessibility_enabled` ne suffit pas ; réécrire la liste des services et le listener reconnecte les deux
+  (procédure dans SAFE-DEPLOYMENT.md). Comportement après un redémarrage de la TV non vérifié.
+
+## Hestia 1.13-safe — ville choisie dans l’app — 1er novembre 2026
+
+- Réglages › Ville : recherche par nom (géocodage Open-Meteo), avec le clavier de la TV. La ville `config.properties`
+  reste la valeur par défaut. Tests et compilation verts ; **pas encore installée ni essayée sur la TV** (clavier à
+  valider à la télécommande).
+- Autostart TCL autorisé sur la TV à la demande du propriétaire (`appops set io.hestia.tv AUTO_START allow`, valeur
+  précédente `ignore`). Effet à vérifier à la prochaine mise à jour et au prochain redémarrage.
+- 1.13-safe installée sur la TV (`install -r`, Canal+ au premier plan, non interrompu). Avec l’autostart autorisé, les deux
+  services se reconnectent seuls après la mise à jour, sans crash ; permission de veille conservée. Effet après un
+  redémarrage de la TV non vérifié ; interface et clavier à valider à la télécommande.
+
+## Hestia 1.14-safe — allègements et État — 1er novembre 2026
+
+- Allègements : attente croissante après un échec réseau (au lieu d’un essai toutes les 15 s), textes de l’économiseur
+  calculés à la minute ou à la photo, 30 images/s au lieu de 60, rangées construites hors du fil principal, horloge calée
+  sur la minute. Gains non mesurés.
+- Ajouts : Réglages › État, minuteur « Éteindre dans », délai d’économiseur, prévisions, carte « En lecture », alerte de
+  nouvelle version, workflow de release. Tests et compilation verts ; **pas encore installée ni essayée sur la TV**. Le
+  minuteur repose sur `GLOBAL_ACTION_LOCK_SCREEN`, jamais déclenché : à valider en vrai.
+- 1.14-safe installée sur la TV le 1er novembre 2026 (Canal+ au premier plan, non interrompu) ; services reconnectés seuls.
+- `disable-services` sur décision du propriétaire : recherche vocale, Agenda et AirPlay désactivés, Chromecast conservé.
+  Mémoire disponible : 727 Mo avant, 746 Mo juste après ; `com.mediatek.airplaydaemon`, désactivé, tourne encore jusqu’au
+  prochain redémarrage (à vérifier). Effet sur le bouton micro et la carte Rechercher à constater à la télécommande.
+- 1.14-safe déclarée bonne par le propriétaire après ses essais sur la TV (1er novembre 2026).

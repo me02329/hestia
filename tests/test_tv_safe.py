@@ -163,6 +163,35 @@ class DeploymentTests(unittest.TestCase):
         touched = {m[1] for m in self.adb.mutations if m[0] == "package"}
         self.assertEqual(touched, set(tv.STOCK))
 
+    def test_services_round_trip_touches_only_listed_packages(self):
+        self.adb.disabled_set = {tv.SERVICES[1]}   # off before this tool: stays off, and isn't ours to turn on
+        self.assertEqual(tv.disable_services(self.adb, self.path), [])
+        self.assertEqual(self.adb.disabled_set, set(tv.SERVICES))
+        self.assertEqual(self.adb.current, ORIGINAL)
+        tv.enable_services(self.adb, self.path)
+        self.assertEqual(self.adb.disabled_set, {tv.SERVICES[1]})
+        self.assertFalse(tv.services_path(self.path).exists())
+        self.assertLessEqual({m[1] for m in self.adb.mutations if m[0] == "package"}, set(tv.SERVICES))
+
+    def test_services_refusal_is_reported_and_not_recorded(self):
+        self.adb.fail_package = tv.SERVICES[0]
+        self.assertEqual(tv.disable_services(self.adb, self.path), [tv.SERVICES[0]])
+        self.assertNotIn(tv.SERVICES[0], self.adb.disabled_set)
+        self.assertNotIn(tv.SERVICES[0], tv.read_json(tv.services_path(self.path))["packages"])
+        self.assertIn(tv.SERVICES[1], self.adb.disabled_set)
+
+    def test_services_refuse_other_tv_foreign_record_and_no_record(self):
+        with self.assertRaisesRegex(tv.SafetyError, "No services record"):
+            tv.enable_services(self.adb, self.path)
+        tv.durable_write(tv.services_path(self.path), {"schema": 1, "snapshot": tv.digest(tv.read_json(self.path)),
+                                                       "packages": ["org.example.evil"]})
+        with self.assertRaisesRegex(tv.SafetyError, "never disables"):
+            tv.enable_services(self.adb, self.path)
+        self.adb.ident["fingerprint"] = "other"
+        with self.assertRaisesRegex(tv.SafetyError, "another TV"):
+            tv.disable_services(self.adb, self.path)
+        self.assertEqual(self.adb.disabled_set, set())
+
     def test_stock_home_failure_rolls_back_packages(self):
         self.adb.fail_package = tv.STOCK[1]
         with self.assertRaisesRegex(tv.SafetyError, "re-enabled"):

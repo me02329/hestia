@@ -1,46 +1,50 @@
 package io.hestia.tv;
 
-import android.content.Intent;
+import io.hestia.tv.apps.Launcher;
+import io.hestia.tv.core.I18n;
+import io.hestia.tv.core.Screens;
+import io.hestia.tv.panel.PanelActivity;
+import io.hestia.tv.panel.PanelEntry;
+import io.hestia.tv.remote.KeyBindings;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Settings › Remote buttons: the three keys Hestia can set, each with what it opens; OK on one lists every choice
- * (the same activity with EXTRA_KEY), OK on a choice saves it.
+ * Settings › Remote buttons: the keys Hestia can set, each with what it opens; OK on one lists every choice (the same
+ * activity with EXTRA_KEY), OK on a choice saves it.
  */
 public class RemoteKeysActivity extends PanelActivity {
-    static final String EXTRA_KEY = "key";
-
     private String key() {
-        return getIntent().getStringExtra(EXTRA_KEY);
+        return getIntent().getStringExtra(Screens.EXTRA_KEY);
     }
 
-    @Override String title() {
+    @Override protected String title() {
         String key = key();
-        return key == null ? Ui.tr("Botões do controle", "Remote buttons") : RemoteKeys.keyName(key);
+        return key == null ? I18n.tr("Botões do controle", "Remote buttons") : KeyBindings.keyName(key);
     }
 
-    @Override String subtitle() {
-        return key() == null ? Ui.tr("Na tela inicial; Início segurado em qualquer lugar",
-                "On the home screen; Home held down anywhere") : "";
+    @Override protected String subtitle() {
+        return key() == null ? I18n.tr("Em qualquer app, com o serviço de acessibilidade",
+                "In any app, with the accessibility service") : "";
     }
 
-    @Override List<Entry> entries() {
-        List<Entry> list = new ArrayList<>();
+    @Override protected List<PanelEntry> entries() {
+        List<PanelEntry> list = new ArrayList<>();
         String key = key();
+        List<KeyBindings.Choice> choices = KeyBindings.choices(this);
         if (key == null) {
-            for (String k : RemoteKeys.KEYS) {
-                list.add(new Entry("gamepad", RemoteKeys.keyName(k), RemoteKeys.label(this, RemoteKeys.get(this, k)), false,
-                        () -> startActivity(new Intent(this, RemoteKeysActivity.class).putExtra(EXTRA_KEY, k))));
+            for (String k : KeyBindings.KEYS) {
+                list.add(new PanelEntry("gamepad", KeyBindings.keyName(k), KeyBindings.label(choices, KeyBindings.get(this, k)), false,
+                        () -> Launcher.startOver(this, Screens.remoteKeys(this, k))));
             }
             return list;
         }
-        if (!java.util.Arrays.asList(RemoteKeys.KEYS).contains(key)) return list;
-        String current = RemoteKeys.get(this, key);
-        for (RemoteKeys.Choice ch : RemoteKeys.choices(this)) {
-            list.add(new Entry(ch.action.equals(current) ? "check" : ch.symbol, ch.label, "", false, () -> {
-                RemoteKeys.set(this, key, ch.action);
+        if (!KeyBindings.KEYS.contains(key)) return list;
+        String current = KeyBindings.get(this, key);
+        for (KeyBindings.Choice ch : choices) {
+            list.add(new PanelEntry(ch.action.equals(current) ? "check" : ch.symbol, ch.label, () -> {
+                KeyBindings.set(this, key, ch.action);
                 finish();
             }));
         }

@@ -40,7 +40,7 @@ python3 tools/tv_safe.py disable-stock-home --adb "$ADB" --serial "$TV_SERIAL" -
 "$ADB" -s "$TV_SERIAL" shell cmd notification allow_listener io.hestia.tv/io.hestia.tv.MediaListener   # lecteur
 ```
 
-Touche Réglages dans les autres apps (facultatif) : service d’accessibilité limité aux touches. Vérifier d’abord la
+Touches TV et Réglages dans les autres apps (facultatif) : service d’accessibilité limité aux touches. Vérifier d’abord la
 valeur existante (`settings get secure enabled_accessibility_services`) et l’ajouter avec `:` si elle n’est pas vide.
 
 ```sh
@@ -48,8 +48,59 @@ valeur existante (`settings get secure enabled_accessibility_services`) et l’a
 "$ADB" -s "$TV_SERIAL" shell settings put secure accessibility_enabled 1
 ```
 
+Délais de mise en veille et d’économiseur modifiables depuis le panneau rapide (facultatif ; sans cela, ces lignes
+ouvrent les pages de la TV, voir [les décisions](docs/adr/)) :
+
+```sh
+"$ADB" -s "$TV_SERIAL" shell pm grant io.hestia.tv android.permission.WRITE_SECURE_SETTINGS
+```
+
 L’économiseur Ambient de Google cesse de fonctionner sans son launcher (la TV passait directement en veille) :
 d’où l’économiseur Hestia. L’accès aux notifications sert uniquement au lecteur du panneau rapide.
+
+## Alléger la TV (facultatif)
+
+Désactive la recherche vocale Google, l’Agenda Google et AirPlay, et rien d’autre ([décision](docs/adr/003-services-desactives.md)).
+Le bouton micro et AirPlay ne marchent plus ensuite.
+
+```sh
+python3 tools/tv_safe.py disable-services --adb "$ADB" --serial "$TV_SERIAL" --backup "$BACKUP"
+python3 tools/tv_safe.py enable-services --adb "$ADB" --serial "$TV_SERIAL" --backup "$BACKUP"   # retour
+```
+
+## Publier une version
+
+Le workflow `release.yml` compile et publie l’APK quand on pousse un tag `vX.Y`, identique à `versionName` sans `-safe`.
+Il exige deux secrets du dépôt et refuse de publier sans eux, car une autre clé ne pourrait pas mettre à jour la TV :
+
+```sh
+base64 -w0 hestia-tv.keystore | gh secret set HESTIA_KEYSTORE_B64 -R me02329/hestia
+gh secret set HESTIA_KEYSTORE_PASS -R me02329/hestia < hestia-tv.keystore.pass
+```
+
+## Après une mise à jour de l’APK
+
+La mise à jour arrête Hestia, et le firmware TCL refuse alors de reconnecter ses services tant que l’autostart n’est pas
+autorisé (`TclAppBoot: forbid bind service`, logcat). Les touches dans les apps et le lecteur du panneau rapide ne
+marchent plus. Autoriser l’autostart (une fois ; retour : même commande avec `ignore`) :
+
+```sh
+"$ADB" -s "$TV_SERIAL" shell appops set io.hestia.tv AUTO_START allow
+```
+
+Si les services restent déconnectés après une mise à jour, une fois Hestia relancée (touche Home), reconnecter les deux :
+
+```sh
+"$ADB" -s "$TV_SERIAL" shell settings delete secure enabled_accessibility_services
+"$ADB" -s "$TV_SERIAL" shell settings put secure enabled_accessibility_services io.hestia.tv/io.hestia.tv.RemoteKeysService
+"$ADB" -s "$TV_SERIAL" shell settings put secure accessibility_enabled 1
+"$ADB" -s "$TV_SERIAL" shell cmd notification disallow_listener io.hestia.tv/io.hestia.tv.MediaListener
+"$ADB" -s "$TV_SERIAL" shell cmd notification allow_listener io.hestia.tv/io.hestia.tv.MediaListener
+```
+
+La première commande efface toute la liste : si d’autres services y figurent, les remettre dans la deuxième, séparés
+par `:`. Basculer seulement `accessibility_enabled` ne relance pas la connexion. Vérifier :
+`dumpsys accessibility | grep "Bound services"`.
 
 ## 3. Revenir à Google TV
 
@@ -64,6 +115,6 @@ d’origine. Si la bascule a été faite à la main (sans fichier `.stock.json`,
 ## Ce qui est vérifié
 
 - Tests simulés (`python3 -m unittest discover -s tests -v`) : identité incorrecte, état concurrent, écriture refusée,
-  coupure ADB, reprise, journal, bascule/retour du launcher d’origine, paquets étrangers refusés ; règles réseau et
-  filtrage des liens RSS sur une JVM réelle.
+  coupure ADB, reprise, journal, bascule/retour du launcher d’origine, paquets étrangers refusés ; règles réseau,
+  filtrage des liens RSS et logique sans Android sur une JVM réelle ; couches et briques (`tests/test_architecture.py`).
 - Essais réels sur la TV : voir [TRIAL.md](TRIAL.md). Une compilation réussie ne remplace pas un essai sur la TV.
