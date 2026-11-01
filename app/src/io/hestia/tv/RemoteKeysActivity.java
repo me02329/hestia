@@ -32,16 +32,17 @@ public class RemoteKeysActivity extends PanelActivity {
     @Override protected List<PanelEntry> entries() {
         List<PanelEntry> list = new ArrayList<>();
         String key = key();
+        List<KeyBindings.Choice> choices = KeyBindings.choices(this);
         if (key == null) {
             for (String k : KeyBindings.KEYS) {
-                list.add(new PanelEntry("gamepad", KeyBindings.keyName(k), KeyBindings.label(this, KeyBindings.get(this, k)), false,
+                list.add(new PanelEntry("gamepad", KeyBindings.keyName(k), KeyBindings.label(choices, KeyBindings.get(this, k)), false,
                         () -> Launcher.startOver(this, Screens.remoteKeys(this, k))));
             }
             return list;
         }
         if (!KeyBindings.KEYS.contains(key)) return list;
         String current = KeyBindings.get(this, key);
-        for (KeyBindings.Choice ch : KeyBindings.choices(this)) {
+        for (KeyBindings.Choice ch : choices) {
             list.add(new PanelEntry(ch.action.equals(current) ? "check" : ch.symbol, ch.label, () -> {
                 KeyBindings.set(this, key, ch.action);
                 finish();

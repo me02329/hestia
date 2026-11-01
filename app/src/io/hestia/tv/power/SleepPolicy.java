@@ -35,6 +35,27 @@ final class SleepPolicy {
         return best;
     }
 
+    /** Screensaver delays offered, in minutes. */
+    static final int[] SCREENSAVER_MINUTES = {5, 10, 15, 20, 30};
+
+    /** The screensaver choice after this one; only those that start before the TV sleeps (sleepMinutes 0 = never). */
+    static int nextScreensaver(int currentMinutes, int sleepMinutes) {
+        int first = SCREENSAVER_MINUTES[0];
+        for (int m : SCREENSAVER_MINUTES) {
+            if (m > currentMinutes && (sleepMinutes == NEVER || m < sleepMinutes)) return m;
+        }
+        return first;
+    }
+
+    /** One-shot timer: the choices, in minutes. */
+    static final int[] TIMER_MINUTES = {15, 30, 45, 60, 90, 120};
+
+    /** The next longer choice than what's left (0 = off); past the longest, off. */
+    static int nextTimer(int minutesLeft) {
+        for (int m : TIMER_MINUTES) if (m > minutesLeft) return m;
+        return 0;
+    }
+
     /** The choice after this one, in a loop. */
     static int next(int minutes) {
         for (int i = 0; i < MINUTES.length; i++) {

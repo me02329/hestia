@@ -4,7 +4,7 @@ import android.graphics.Bitmap;
 
 /** One thing on a row of the home screen: an app (its 16:9 art) or a shortcut (an icon on a colored card). */
 public final class Card {
-    public enum Kind { APP, LIVE_TV, INPUT, HESTIA_SETTINGS, TV_SETTINGS, SEARCH }
+    public enum Kind { APP, LIVE_TV, INPUT, HESTIA_SETTINGS, TV_SETTINGS, SEARCH, NOW_PLAYING }
 
     public final Kind kind;
     public final String key, label;
@@ -18,6 +18,13 @@ public final class Card {
         this.kind = kind;
         this.key = key;
         this.label = label;
+    }
+
+    /** What's playing: opens its app. */
+    public static Card nowPlaying(String song, String pkg) {
+        Card card = shortcut(Kind.NOW_PLAYING, "now-playing", song, "music");
+        card.pkg = pkg;
+        return card;
     }
 
     static Card shortcut(Kind kind, String key, String label, String symbol) {

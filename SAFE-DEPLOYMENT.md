@@ -48,8 +48,8 @@ valeur existante (`settings get secure enabled_accessibility_services`) et l’a
 "$ADB" -s "$TV_SERIAL" shell settings put secure accessibility_enabled 1
 ```
 
-Délai de mise en veille modifiable depuis le panneau rapide (facultatif ; sans cela, la ligne ouvre la page de la TV,
-voir [la décision](docs/adr/001-write-secure-settings.md)) :
+Délais de mise en veille et d’économiseur modifiables depuis le panneau rapide (facultatif ; sans cela, ces lignes
+ouvrent les pages de la TV, voir [les décisions](docs/adr/)) :
 
 ```sh
 "$ADB" -s "$TV_SERIAL" shell pm grant io.hestia.tv android.permission.WRITE_SECURE_SETTINGS
@@ -57,6 +57,16 @@ voir [la décision](docs/adr/001-write-secure-settings.md)) :
 
 L’économiseur Ambient de Google cesse de fonctionner sans son launcher (la TV passait directement en veille) :
 d’où l’économiseur Hestia. L’accès aux notifications sert uniquement au lecteur du panneau rapide.
+
+## Publier une version
+
+Le workflow `release.yml` compile et publie l’APK quand on pousse un tag `vX.Y`, identique à `versionName` sans `-safe`.
+Il exige deux secrets du dépôt et refuse de publier sans eux, car une autre clé ne pourrait pas mettre à jour la TV :
+
+```sh
+base64 -w0 hestia-tv.keystore | gh secret set HESTIA_KEYSTORE_B64 -R me02329/hestia
+gh secret set HESTIA_KEYSTORE_PASS -R me02329/hestia < hestia-tv.keystore.pass
+```
 
 ## Après une mise à jour de l’APK
 

@@ -28,6 +28,13 @@ public final class PowerLogicTest {
         } while (m != SleepPolicy.MINUTES[0] && seen < 100);
         require(seen == SleepPolicy.MINUTES.length, "next loops through every choice");
         require(SleepPolicy.next(7) == SleepPolicy.MINUTES[0], "unknown value restarts");
+        require(SleepPolicy.nextScreensaver(10, 20) == 15, "next screensaver");
+        require(SleepPolicy.nextScreensaver(15, 20) == 5, "never as late as the sleep: back to the first");
+        require(SleepPolicy.nextScreensaver(20, SleepPolicy.NEVER) == 30, "no sleep, no limit");
+        require(SleepPolicy.nextScreensaver(30, SleepPolicy.NEVER) == 5, "loops");
+        require(SleepPolicy.nextTimer(0) == 15, "off to first");
+        require(SleepPolicy.nextTimer(28) == 30, "next longer than what's left");
+        require(SleepPolicy.nextTimer(120) == 0, "past the longest: off");
         System.out.println("checks passed");
     }
 }

@@ -71,13 +71,13 @@ public final class KeyBindings {
         if (AppCatalog.hasSearch(c)) list.add(new Choice(KeyAction.SEARCH, I18n.tr("Pesquisar", "Search"), "mic"));
         list.add(new Choice(KeyAction.TV_SETTINGS, I18n.tr("Ajustes da TV", "TV Settings"), "tv_settings"));
         list.add(new Choice(KeyAction.HESTIA, "Hestia", "home"));
-        for (Card app : AppCatalog.allApps(c)) list.add(new Choice(KeyAction.app(app.pkg), app.label, "apps"));
+        for (Card app : AppCatalog.appNames(c)) list.add(new Choice(KeyAction.app(app.pkg), app.label, "apps"));
         return list;
     }
 
-    /** The name of what an action opens (for the settings), or the action's own text if it no longer exists. */
-    public static String label(Context c, String action) {
-        for (Choice ch : choices(c)) if (ch.action.equals(action)) return ch.label;
+    /** The name of what an action opens, from choices(), or the action's own text if it no longer exists. */
+    public static String label(List<Choice> choices, String action) {
+        for (Choice ch : choices) if (ch.action.equals(action)) return ch.label;
         String pkg = KeyAction.appOf(action);
         return pkg != null ? pkg : action;
     }

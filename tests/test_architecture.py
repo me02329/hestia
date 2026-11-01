@@ -18,7 +18,7 @@ LAYERS = {
     "ui": {"core", "data"},
     "panel": {"core", "ui"},
     "media": {"core", "ui", "panel"},
-    "home": {"core", "data", "apps", "remote", "ui"},
+    "home": {"core", "data", "apps", "remote", "media", "ui"},
     "settings": {"core", "data", "apps", "ui"},
     "news": {"core", "data", "ui"},
     "dream": {"core", "data", "ui"},
@@ -33,7 +33,7 @@ ONE_DOOR = {
     r"new HttpURLConnection|openConnection\(": {"data/Net.java"},
     r"Thread\(": set(),
 }
-PLAIN_JAVA = ["core/I18n.java", "core/TimeText.java", "data/City.java", "data/FeedText.java", "data/Freshness.java", "data/Net.java",
+PLAIN_JAVA = ["core/I18n.java", "core/TimeText.java", "data/City.java", "data/FeedText.java", "data/Freshness.java", "data/Net.java", "data/Version.java",
               "data/WeatherText.java", "power/SleepPolicy.java", "remote/KeyAction.java", "ui/Colors.java",
               "ui/Spring.java"]
 MAX_LINES = 500

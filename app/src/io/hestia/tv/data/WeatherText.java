@@ -2,11 +2,45 @@ package io.hestia.tv.data;
 
 import io.hestia.tv.core.I18n;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 /** The weather in words. Plain Java: tested on a JVM (tests/java). */
 public final class WeatherText {
     private WeatherText() {}
+
+    /** One day of the forecast: "2026-11-02", its WMO code and highest temperature (Celsius). */
+    public static final class Day {
+        final String date;
+        public final int code;
+        final double high;
+
+        Day(String date, int code, double high) {
+            this.date = date;
+            this.code = code;
+            this.high = high;
+        }
+    }
+
+    /** "Mar 14° · Mer 12° · Jeu 9°" in the UI's language. */
+    static String forecastLine(List<Day> days, String unitChoice) {
+        List<String> parts = new ArrayList<>();
+        for (Day d : days) parts.add(dayName(d.date) + " " + degrees(d.high, unitChoice));
+        return String.join(" · ", parts);
+    }
+
+    private static String dayName(String date) {
+        try {
+            String name = new SimpleDateFormat("EEE", I18n.locale()).format(new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).parse(date));
+            name = name.replace(".", "");
+            return name.isEmpty() ? name : Character.toUpperCase(name.charAt(0)) + name.substring(1);
+        } catch (ParseException e) {
+            return "";
+        }
+    }
 
     private enum Sky { CLEAR, FEW, PARTLY, CLOUDY, FOG, DRIZZLE, HEAVY, SNOW, STORM, RAIN }
 

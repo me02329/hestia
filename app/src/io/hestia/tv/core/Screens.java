@@ -26,6 +26,10 @@ public final class Screens {
         return screen(c, "SettingsActivity");
     }
 
+    public static Intent status(Context c) {
+        return screen(c, "StatusActivity");
+    }
+
     public static Intent city(Context c) {
         return screen(c, "CityActivity");
     }

@@ -4,10 +4,12 @@ This branch supersedes the upstream installation and debloating instructions.
 Read README.md and SAFE-DEPLOYMENT.md before deployment.
 
 - The user authorized local hardening and build/testing. TV deployment is a separate next step.
+- Purpose: replace Google TV because it is slow, laggy, full of background services and ads. Every addition must stay
+  light: nothing in the background without a reason, nothing fetched unless a screen is visible and asks.
 - Before writing a feature, read docs/ARCHITECTURE.md (layers) and docs/BRIQUES.md (call the brick, don't recode its rule).
 - Manifest components stay in the root package io.hestia.tv: the TV's settings and tools/tv_safe.py name those classes.
 - Do not reintroduce in-app ADB, package disabling or boot-time enforcement. WRITE_SECURE_SETTINGS is allowed only for
-  the two sleep delays in power/SleepDelay, granted once over ADB (docs/adr/001); no other system setting without the
+  the three delays in power/SleepDelay, granted once over ADB (docs/adr/001, 002); no other system setting without the
   owner asking and a new ADR.
 - In-app code never disables packages. On the owner's explicit decision (2026-10-21) the TV runs with
   `launcherx` and `setupwraith` disabled; only tools/tv_safe.py (disable/enable-stock-home, STOCK list) may

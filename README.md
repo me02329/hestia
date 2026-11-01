@@ -55,7 +55,9 @@ Hestia, déesse grecque du **foyer**, remplace l’accueil Google TV par un écr
 | ⭐ **Apps favorites** | Première rangée, choisie et ordonnée dans les réglages |
 | 📺 **TV & entrées** | TV en direct, HDMI (atténués s’ils sont débranchés), recherche vocale, Play Store, réglages — cartes colorées |
 | 🗂️ **Toutes les apps** | Tri A–Z, les plus utilisées ou récentes ; apps masquables |
-| 🎛️ **Panneau rapide** | Lecteur (pochette, progression, ⏮ ⏯ ⏭), sources, délai de mise en veille, image, son, réseau, accessoires |
+| 🎵 **En lecture** | Une carte en tête de la rangée TV pour revenir à ce qui joue |
+| 🎛️ **Panneau rapide** | Lecteur (pochette, progression, ⏮ ⏯ ⏭), sources, minuteur « Éteindre dans », délais de veille et d’économiseur, prévisions, image, son, réseau, accessoires |
+| 🩺 **État** | Réglages › État : ce qui fonctionne vraiment, fraîcheur des données, nouvelle version |
 | 📋 **Menu d’app** | Appui long OK : favoris, déplacer, masquer, infos, Play Store, désinstaller |
 | 🌙 **Économiseur** | Diaporama 45 s par photo, zoom lent, heure, météo et une actu |
 | 🌍 **Langues** | Français, English, Português — automatique selon la TV |
@@ -103,15 +105,15 @@ temperature=C      # C, F ou auto
 
 ## 🔐 Vie privée & sécurité
 
-- **Réseau** : `api.open-meteo.com`, `geocoding-api.open-meteo.com` (uniquement le nom tapé en cherchant une ville), `www.bing.com` et les flux RSS listés dans `data/Net.java` — HTTPS uniquement,
+- **Réseau** : `api.open-meteo.com`, `geocoding-api.open-meteo.com` (uniquement le nom tapé en cherchant une ville), `api.github.com` (nouvelle version, au plus une fois par jour, réglages ouverts), `www.bing.com` et les flux RSS listés dans `data/Net.java` — HTTPS uniquement,
   sans redirection, tailles et délais bornés, erreurs sans URL ni secret.
 - **Liens d’actus** : seuls des liens `https` simples sont ouverts, et uniquement à votre demande (testé sur JVM).
 - **Permissions** : Internet, état du réseau, et demande de désinstallation (Android affiche sa confirmation).
 - **Accès facultatifs**, activés une fois par ADB et réversibles :
   - *notifications* → uniquement pour le lecteur du panneau rapide ; aucune notification n’est lue ;
-  - *accessibilité* → uniquement pour les touches TV et Réglages dans les autres apps ; aucun contenu d’écran n’est lu ;
-  - *réglages sécurisés* → uniquement pour les deux délais de mise en veille, sur OK dans le panneau rapide
-    ([décision](docs/adr/001-write-secure-settings.md)). Sans cet accès, la ligne ouvre la page de la TV.
+  - *accessibilité* → uniquement pour les touches TV et Réglages dans les autres apps et le minuteur d’extinction ; aucun contenu d’écran n’est lu ;
+  - *réglages sécurisés* → uniquement pour les délais de mise en veille et d’économiseur, sur OK dans le panneau rapide
+    ([décisions](docs/adr/)). Sans cet accès, ces lignes ouvrent les pages de la TV.
 - **Rien dans l’app** ne désactive de paquet ni n’ouvre de shell, et aucun autre réglage système n’est modifié.
 
 ## 🗺️ Le code en bref

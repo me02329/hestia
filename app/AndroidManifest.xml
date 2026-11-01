@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="io.hestia.tv"
-    android:versionCode="14"
-    android:versionName="1.13-safe">
+    android:versionCode="15"
+    android:versionName="1.14-safe">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -49,8 +49,8 @@
         </intent>
     </queries>
 
-    <!-- Quick panel › Sleep after: granted once over ADB (docs/adr/001), touches sleep_timeout and attentive_timeout only.
-         Without the grant, the row opens the TV's own energy page. -->
+    <!-- Quick panel's delays: granted once over ADB (docs/adr/001, 002), touches sleep_timeout, attentive_timeout and
+         screen_off_timeout only. Without the grant, those rows open the TV's own pages. -->
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
 
     <uses-feature android:name="android.software.leanback" android:required="false" />
@@ -138,6 +138,17 @@
         <!-- Settings › Remote buttons: what the TV (short, long) and Settings buttons and Home held down open. -->
         <activity
             android:name=".RemoteKeysActivity"
+            android:process=":home"
+            android:exported="false"
+            android:label="Hestia"
+            android:excludeFromRecents="true"
+            android:screenOrientation="landscape"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density|fontScale|locale|layoutDirection"
+            android:theme="@style/Hestia.Panel" />
+
+        <!-- Settings › Status: which accesses work right now. -->
+        <activity
+            android:name=".StatusActivity"
             android:process=":home"
             android:exported="false"
             android:label="Hestia"

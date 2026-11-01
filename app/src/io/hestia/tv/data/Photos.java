@@ -107,7 +107,7 @@ public final class Photos extends Feed {
                         .put("credit", o.optString("copyright")));
             }
         }
-        if (found.length() == 0) return;
+        if (found.length() == 0) throw new IOException("no photo available");
         fetchedAt = System.currentTimeMillis();
         write(new File(dir, "index.json"), new JSONObject().put("at", fetchedAt).put("photos", found).toString());
         photos = parse(found);

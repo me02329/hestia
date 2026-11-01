@@ -28,8 +28,8 @@ final class PanelView extends CanvasView {
     private final PanelActivity activity;
     private final RectF panel = new RectF(), rect = new RectF();
     private final Paint glass = new Paint(Paint.ANTI_ALIAS_FLAG), fill = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint shade = new Paint(), titlePaint, subPaint;
-    private final TextPaint label, detail;
+    private final Paint shade = new Paint(), subPaint;
+    private final TextPaint titlePaint, label, detail;
     private final FocusSprings pop = new FocusSprings(0.26f, 0.85f);
     private final Spring scroll = new Spring(0.4f, 1f, 0), appear = new Spring(0.32f, 0.9f, 0);
     private final Press ok = new Press();
@@ -43,7 +43,7 @@ final class PanelView extends CanvasView {
         glass.setColor(0xF0161820);
         glass.setShadowLayer(40, 0, 0, 0xCC000000);
         shade.setColor(0x80000000);
-        titlePaint = Paints.text(Fonts.displaySemibold, 44, Color.WHITE);
+        titlePaint = new TextPaint(Paints.text(Fonts.displaySemibold, 44, Color.WHITE));
         subPaint = Paints.text(Fonts.regular, 26, 0xB3FFFFFF);
         label = new TextPaint(Paints.text(Fonts.medium, 32, Color.WHITE));
         detail = new TextPaint(Paints.text(Fonts.regular, 24, 0x99FFFFFF));
@@ -99,7 +99,7 @@ final class PanelView extends CanvasView {
         }
         glass.setAlpha(Math.round(240 * a));
         c.drawRoundRect(panel, 36, 36, glass);
-        c.drawText(TextUtils.ellipsize(activity.title(), new TextPaint(titlePaint), PANEL_W - 2 * PAD,
+        c.drawText(TextUtils.ellipsize(activity.title(), titlePaint, PANEL_W - 2 * PAD,
                 TextUtils.TruncateAt.END).toString(), panel.left + PAD, panel.top + 92, titlePaint);
         String subtitle = activity.subtitle();
         if (!subtitle.isEmpty()) c.drawText(subtitle, panel.left + PAD, panel.top + 140, subPaint);

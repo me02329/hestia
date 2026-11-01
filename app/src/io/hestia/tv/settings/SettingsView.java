@@ -2,7 +2,6 @@ package io.hestia.tv.settings;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -29,6 +28,7 @@ import io.hestia.tv.core.Keys;
 import io.hestia.tv.core.Prefs;
 import io.hestia.tv.core.Screens;
 import io.hestia.tv.data.Photos;
+import io.hestia.tv.data.Updates;
 import io.hestia.tv.data.Weather;
 import io.hestia.tv.ui.Backdrop;
 import io.hestia.tv.ui.CanvasView;
@@ -57,7 +57,7 @@ public final class SettingsView extends CanvasView {
     private static final float MARGIN = 120;
     private static final String[] SORTS = {AppCatalog.SORT_NAME, AppCatalog.SORT_USAGE, AppCatalog.SORT_RECENT};
     private static final String[] LANGUAGES = {I18n.AUTO, I18n.LANG_FR, I18n.LANG_EN, I18n.LANG_PT};
-    private static final float LIST_X = 920, LIST_R = W - MARGIN, LIST_TOP = 210, ROW_H = 74, ROW_GAP = 9;
+    private static final float LIST_X = 920, LIST_R = W - MARGIN, LIST_TOP = 170, ROW_H = 66, ROW_GAP = 8;
     private static final int GRID_COLS = 5;
     private static final float CARD_W = 300, CARD_H = 169, CARD_GAP = 36, GRID_TOP = 300, GRID_STEP = 250;
     private static final int ACCENT = 0xFFFFB347, INK = 0xFF15161A;
@@ -147,6 +147,10 @@ public final class SettingsView extends CanvasView {
             String city = Weather.get(c).place();
             return city.isEmpty() ? I18n.tr("Sem nome", "No name") : city;
         }, () -> Launcher.startOver(activity, Screens.city(c))));
+        rows.add(new SettingsRow(() -> I18n.tr("Estado", "Status"), () -> {
+            String update = Updates.get(c).available();
+            return update.isEmpty() ? "" : I18n.tr("Nova versão", "New version") + " " + update;
+        }, () -> Launcher.startOver(activity, Screens.status(c))));
         rows.add(new SettingsRow(() -> I18n.tr("Notícias de cibersegurança", "Cyber news"),
                 () -> newsOn ? I18n.tr("Ligado", "On") : I18n.tr("Desligado", "Off"), () -> {
             newsOn = !newsOn;
@@ -192,6 +196,7 @@ public final class SettingsView extends CanvasView {
         newsOn = Prefs.newsEnabled(c);
         homeIsOurs = HomeRole.isDefault(c);
         backdrop.load(c, this);
+        Updates.get(c).refreshIfStale();
         wake();
     }
 
@@ -296,11 +301,11 @@ public final class SettingsView extends CanvasView {
         fill.setColor(Colors.blend(0x33FFFFFF, 0xFFFFFFFF, f));
         c.drawRoundRect(rect, 22, 22, fill);
         rowLabel.setColor(Colors.blend(0xFFFFFFFF, INK, f));
-        float base = row.sub == null ? cy + Paints.halfCap(rowLabel) : cy - 6;
+        float base = row.sub == null ? cy + Paints.halfCap(rowLabel) : cy - 4;
         c.drawText(row.label.get(), rect.left + 36, base, rowLabel);
         if (row.sub != null) {
             rowSub.setColor(Colors.blend(0xA6FFFFFF, 0x991C1C1E, f));
-            c.drawText(row.sub, rect.left + 36, cy + 30, rowSub);
+            c.drawText(row.sub, rect.left + 36, cy + 26, rowSub);
         }
         String value = row.value.get();
         if (!value.isEmpty()) {
@@ -461,10 +466,6 @@ public final class SettingsView extends CanvasView {
     }
 
     private String version() {
-        try {
-            return "Hestia " + getContext().getPackageManager().getPackageInfo(getContext().getPackageName(), 0).versionName;
-        } catch (PackageManager.NameNotFoundException e) {
-            return "Hestia";
-        }
+        return "Hestia " + Updates.get(getContext()).installed();
     }
 }

@@ -25,4 +25,4 @@ Une fois accordée, la permission vaut pour tout le processus : Android ne la re
 donc au code et au test, pas au système. Pour la retirer :
 `adb shell pm revoke io.hestia.tv android.permission.WRITE_SECURE_SETTINGS`.
 
-Autres écritures possibles à l'avenir : chacune demande une nouvelle décision du propriétaire et une nouvelle ADR.
+Le délai de l'économiseur s'y est ajouté depuis : voir l'[ADR 002](002-screensaver-delay.md). Autres écritures possibles à l'avenir : chacune demande une nouvelle décision du propriétaire et une nouvelle ADR.

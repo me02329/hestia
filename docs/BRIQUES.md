@@ -13,7 +13,7 @@ on ne la recode pas. `tests/test_architecture.py` vérifie celles qu'on peut vé
 | suivre OK ou Retour | `Press.track(e)` → `CLICK`, `LONG` | `okDown`, `okLong`, `backDown` | non |
 | reconnaître une touche | `Keys.isOk`, `isSettings`, `isTv` | des `KEYCODE_` ou `4001` en dur | en partie |
 | brancher une touche de la télécommande | `KeyRouter` ; nouvelle touche : une constante dans `KeyBindings` | ouvrir l'action depuis l'écran | non |
-| ajouter une source réseau | `extends Feed` : `fetch()`, `notifyListeners()` ; hôte dans `Net` | un thread, un cache, un calcul de fraîcheur à soi | oui |
+| ajouter une source réseau | `extends Feed` : `fetch()` qui lève une exception en cas d'échec (attente croissante entre les essais), `notifyListeners()` ; hôte dans `Net` | un thread, un cache, un calcul de fraîcheur à soi | oui |
 | faire une requête | `Net.json`, `Net.feed`, `Net.download` | `openConnection` | oui |
 | un travail d'écran hors du fil principal | `Background.run`, `Background.onMain` | un `Executor` par classe | oui |
 | écrire un texte visible | `I18n.tr("pt", "en")` + le français dans la table de `I18n` | une chaîne en dur | oui, le français |
@@ -22,4 +22,5 @@ on ne la recode pas. `tests/test_architecture.py` vérifie celles qu'on peut vé
 | ajouter une ligne aux réglages | une `SettingsRow` dans `buildMainRows()` | un index et un `else if` | non |
 | ajouter une ligne au panneau rapide | une `PanelEntry` dans `entries()` | modifier `PanelView` | non |
 | ajouter une carte au-dessus d'un panneau | `implements PanelHeader` | du dessin dans l'activité | non |
-| changer un réglage système | ne pas le faire : voir `docs/adr/001` | `Settings.*.put` hors de `SleepDelay` | oui |
+| ouvrir une page web | `Launcher.openLink` (évite le navigateur vide d'Android) | chercher un navigateur à la main | non |
+| changer un réglage système | ne pas le faire : voir `docs/adr/001` et `002` | `Settings.*.put` hors de `SleepDelay` | oui |

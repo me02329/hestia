@@ -50,6 +50,10 @@ public final class DreamView extends CanvasView {
     private Photos.Photo currentInfo;
     private long currentStart, previousStart;
     private int index = -1, slides;
+    // What's written changes at most once a minute or once a slide: worked out then, not at each frame.
+    private long lastMinute = -1;
+    private int textSlide = -1;
+    private String timeText = "", dateText = "", titleText = "", creditText = "", headlineText = "";
     private boolean running, loading;
 
     private final Matrix matrix = new Matrix();
@@ -73,7 +77,7 @@ public final class DreamView extends CanvasView {
     private final Feed.Listener photoListener = () -> {
         if (current == null) next();
     };
-    private final Feed.Listener weatherListener = this::invalidate;
+    private final Feed.Listener weatherListener = () -> lastMinute = -1;
 
     public DreamView(Context c) {
         super(c);
@@ -143,6 +147,11 @@ public final class DreamView extends CanvasView {
         return running;
     }
 
+    /** The zoom is very slow: half the frames look the same, for half the work. */
+    @Override protected int framePace() {
+        return 2;
+    }
+
     @Override protected void drawScene(Canvas c) {
         c.drawColor(Color.BLACK);
         long now = SystemClock.uptimeMillis();
@@ -167,35 +176,45 @@ public final class DreamView extends CanvasView {
         c.drawBitmap(b, matrix, image);
     }
 
+    private void refreshText(long minute, long wall) {
+        if (minute != lastMinute) {
+            lastMinute = minute;
+            timeText = TimeText.clock(wall);
+            dateText = TimeText.dateLine(wall);
+            Weather.Reading wx = weather.now();
+            if (!Double.isNaN(wx.temp)) {
+                dateText += "  ·  " + WeatherText.degrees(wx.temp, Config.TEMPERATURE) + " " + WeatherText.condition(wx.code, wx.isDay);
+            }
+        }
+        if (slides != textSlide) {
+            textSlide = slides;
+            List<News.Headline> heads = newsOn ? news.recent() : null;
+            headlineText = heads == null || heads.isEmpty() ? "" : TextUtils.ellipsize(
+                    heads.get(Math.max(0, slides) % heads.size()).title, headline, 1000, TextUtils.TruncateAt.END).toString();
+            titleText = currentInfo == null ? "" : TextUtils.ellipsize(currentInfo.title, title, 760, TextUtils.TruncateAt.END).toString();
+            creditText = currentInfo == null ? "" : TextUtils.ellipsize(currentInfo.credit, credit, 900, TextUtils.TruncateAt.END).toString();
+        }
+    }
+
     private void drawText(Canvas c) {
         long wall = System.currentTimeMillis();
         // A different few-pixel offset every minute, so nothing stays lit in the same place for hours.
         long minute = wall / 60_000;
+        refreshText(minute, wall);
         float dx = (float) (Math.sin(minute * 1.7) * 18), dy = (float) (Math.cos(minute * 2.3) * 12);
         float x = MARGIN + dx, base = H - 150 + dy;
-        String time = TimeText.clock(wall);
-        c.drawText(time, x - Paints.leftBearing(clock, time), base, clock);
-        String line = TimeText.dateLine(wall);
-        Weather.Reading wx = weather.now();
-        if (!Double.isNaN(wx.temp)) {
-            line += "  ·  " + WeatherText.degrees(wx.temp, Config.TEMPERATURE) + " " + WeatherText.condition(wx.code, wx.isDay);
-        }
-        c.drawText(line, x, base + 56, date);
-        List<News.Headline> heads = newsOn ? news.recent() : null;
-        if (heads != null && !heads.isEmpty()) {
-            News.Headline h = heads.get(Math.max(0, slides) % heads.size());
+        c.drawText(timeText, x - Paints.leftBearing(clock, timeText), base, clock);
+        c.drawText(dateText, x, base + 56, date);
+        if (!headlineText.isEmpty()) {
             float hy = base - 128, pw = pillText.measureText("CYBER") + 24;
             c.drawRoundRect(x, hy - 26, x + pw, hy + 6, 16, 16, pill);
             c.drawText("CYBER", x + 12, hy - 10 + Paints.halfCap(pillText), pillText);
-            c.drawText(TextUtils.ellipsize(h.title, headline, 1000, TextUtils.TruncateAt.END).toString(),
-                    x + pw + 16, hy + 1, headline);
+            c.drawText(headlineText, x + pw + 16, hy + 1, headline);
         }
         if (currentInfo != null) {
             float right = W - MARGIN - dx;
-            c.drawText(TextUtils.ellipsize(currentInfo.title, title, 760, TextUtils.TruncateAt.END).toString(),
-                    right, base + 12, title);
-            c.drawText(TextUtils.ellipsize(currentInfo.credit, credit, 900, TextUtils.TruncateAt.END).toString(),
-                    right, base + 56, credit);
+            c.drawText(titleText, right, base + 12, title);
+            c.drawText(creditText, right, base + 56, credit);
         }
     }
 }

@@ -2,6 +2,7 @@ package io.hestia.tv.home;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -30,6 +31,7 @@ import io.hestia.tv.data.Feed;
 import io.hestia.tv.data.News;
 import io.hestia.tv.data.Photos;
 import io.hestia.tv.data.Weather;
+import io.hestia.tv.media.NowPlaying;
 import io.hestia.tv.remote.KeyRouter;
 import io.hestia.tv.ui.CanvasView;
 import io.hestia.tv.ui.Click;
@@ -49,7 +51,7 @@ import java.util.List;
 public final class HomeView extends CanvasView {
     static final float MARGIN = 96;
     private static final float ROWS_TOP = 540, ROW_STEP = 300;
-    private static final long HEADLINE_EVERY = 12_000, TICK_EVERY = 15_000;
+    private static final long HEADLINE_EVERY = 12_000, TICK_EVERY = 15_000, MINUTE = 60_000;
 
     private final Activity activity;
     private final Weather weather;
@@ -61,6 +63,9 @@ public final class HomeView extends CanvasView {
     private final Click click;
     private final KeyRouter router;
     private final TvInputManager tvInputs;
+    private final NowPlaying playing;
+    private List<Card> favoriteCards = new ArrayList<>(), tvCards = new ArrayList<>(), otherCards = new ArrayList<>();
+    private String playingKey = "";
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final List<CardRow> rows = new ArrayList<>();
     private final Spring scrollY = new Spring(0.5f, 1f, 0);
@@ -107,7 +112,16 @@ public final class HomeView extends CanvasView {
         }
     };
 
-    public HomeView(Activity a) {
+    /** Redraws the clock right when the minute changes. */
+    private final Runnable minute = new Runnable() {
+        @Override public void run() {
+            if (!running) return;
+            invalidate();
+            handler.postDelayed(this, MINUTE - System.currentTimeMillis() % MINUTE);
+        }
+    };
+
+    public HomeView(Activity a, ComponentName mediaListener) {
         super(a);
         activity = a;
         weather = Weather.get(a);
@@ -122,7 +136,8 @@ public final class HomeView extends CanvasView {
         rowStyle = new CardRow.Style(a, logo);
         topScrim.setShader(new LinearGradient(0, 0, 0, 380, 0x99000000, 0x00000000, Shader.TileMode.CLAMP));
         bottomScrim.setShader(new LinearGradient(0, 380, 0, H, 0x00000000, 0xE6000000, Shader.TileMode.CLAMP));
-        setRows(AppCatalog.favoriteCards(a), AppCatalog.tvCards(a), AppCatalog.otherApps(a));
+        // The rows are built on the worker (reload, from resume): the screen shows without waiting for every app's art.
+        playing = new NowPlaying(a, mediaListener, this::onPlayingChanged);
     }
 
     // MARK: - Lifecycle (called by HomeActivity)
@@ -150,9 +165,12 @@ public final class HomeView extends CanvasView {
         filter.addAction(Intent.ACTION_PACKAGE_CHANGED);
         filter.addDataScheme("package");
         getContext().registerReceiver(packages, filter, Context.RECEIVER_NOT_EXPORTED);
+        playing.find();
+        playingKey = playingKey();
         reload();
         if (carousel.due()) carousel.next();
         handler.post(tick);
+        handler.post(minute);
         invalidate();
     }
 
@@ -160,6 +178,8 @@ public final class HomeView extends CanvasView {
         running = false;
         handler.removeCallbacks(tick);
         handler.removeCallbacks(rotate);
+        handler.removeCallbacks(minute);
+        playing.release();
         weather.removeListener(weatherListener);
         photos.removeListener(photosListener);
         news.removeListener(newsListener);
@@ -188,6 +208,18 @@ public final class HomeView extends CanvasView {
         if (carousel.isEmpty()) carousel.next();
     }
 
+    private String playingKey() {
+        return playing.active() ? playing.packageName() + "/" + playing.song() : "";
+    }
+
+    /** Rebuilds the rows only when what's playing really changed, not at each play or pause. */
+    private void onPlayingChanged() {
+        String key = playingKey();
+        if (key.equals(playingKey)) return;
+        playingKey = key;
+        showRows();
+    }
+
     private void showHeadlines() {
         header.setHeadlines(newsOn ? news.recent() : new ArrayList<>());
         invalidate();
@@ -201,8 +233,21 @@ public final class HomeView extends CanvasView {
             final List<Card> favorites = AppCatalog.favoriteCards(c);
             final List<Card> tv = AppCatalog.tvCards(c);
             final List<Card> others = AppCatalog.otherApps(c);
-            Background.onMain(() -> setRows(favorites, tv, others));
+            Background.onMain(() -> {
+                favoriteCards = favorites;
+                tvCards = tv;
+                otherCards = others;
+                showRows();
+            });
         });
+    }
+
+    /** The TV row starts with what's playing, when something is. */
+    private void showRows() {
+        List<Card> tv = new ArrayList<>();
+        if (playing.active() && !playing.song().isEmpty()) tv.add(Card.nowPlaying(playing.song(), playing.packageName()));
+        tv.addAll(tvCards);
+        setRows(favoriteCards, tv, otherCards);
     }
 
     /** Replaces the rows, keeping the focus on the same card when it's still there. */

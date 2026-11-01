@@ -21,7 +21,9 @@ import io.hestia.tv.panel.PanelActivity;
 import io.hestia.tv.panel.PanelEntry;
 import io.hestia.tv.panel.PanelHeader;
 import io.hestia.tv.power.SleepDelay;
+import io.hestia.tv.power.SleepTimer;
 import io.hestia.tv.remote.KeyBindings;
+import io.hestia.tv.ui.Symbols;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -109,8 +111,16 @@ public class QuickPanelActivity extends PanelActivity {
             list.add(new PanelEntry("hdmi", input.label, input.connected ? I18n.tr("Ligado", "On") : "", !input.connected,
                     () -> open(Launcher.input(input.inputId))));
         }
+        list.add(new PanelEntry("clear_night", I18n.tr("Desligar em", "Turn off in"), timerLabel(), false, this::changeTimer));
         list.add(new PanelEntry("clear_night", I18n.tr("Suspensão", "Sleep after"), SleepDelay.currentLabel(this), false,
                 this::changeSleepDelay));
+        list.add(new PanelEntry("clear_night", I18n.tr("Tela de descanso após", "Screensaver after"), SleepDelay.screensaverLabel(this), false,
+                this::changeScreensaver));
+        String forecast = Weather.get(this).forecastLine();
+        if (!forecast.isEmpty()) {
+            int code = Weather.get(this).now().forecast.get(0).code;
+            list.add(new PanelEntry(Symbols.weather(code, true), forecast, () -> { }));
+        }
         list.add(setting("tv_settings", I18n.tr("Imagem", "Picture"), Settings.ACTION_DISPLAY_SETTINGS));
         list.add(setting("speaker", I18n.tr("Som", "Sound"), Settings.ACTION_SOUND_SETTINGS));
         list.add(setting("sync", I18n.tr("Rede e Internet", "Network & Internet"), Settings.ACTION_WIFI_SETTINGS));
@@ -131,8 +141,33 @@ public class QuickPanelActivity extends PanelActivity {
         } else if (SleepDelay.next(this)) {
             refresh();
         } else {
-            Toast.makeText(this, I18n.tr("Indisponível nesta TV.", "Not available on this TV."), Toast.LENGTH_SHORT).show();
+            unavailable();
         }
+    }
+
+    private void changeScreensaver() {
+        if (!SleepDelay.canChange(this)) open(SleepDelay.screensaverPage());
+        else if (SleepDelay.nextScreensaver(this)) refresh();
+        else unavailable();
+    }
+
+    private String timerLabel() {
+        String left = SleepTimer.label();
+        return !left.isEmpty() ? left : I18n.tr("Desligado", "Off");
+    }
+
+    /** The timer needs the remote keys service, which has what puts the TV to sleep. */
+    private void changeTimer() {
+        if (!SleepTimer.available()) {
+            unavailable();
+            return;
+        }
+        SleepTimer.next();
+        refresh();
+    }
+
+    private void unavailable() {
+        Toast.makeText(this, I18n.tr("Indisponível nesta TV.", "Not available on this TV."), Toast.LENGTH_SHORT).show();
     }
 
     private void open(Intent intent) {

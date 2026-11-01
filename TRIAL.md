@@ -158,3 +158,12 @@ Le retour utilisateur signale des éléments manquants en haut. La capture confi
 - 1.13-safe installée sur la TV (`install -r`, Canal+ au premier plan, non interrompu). Avec l’autostart autorisé, les deux
   services se reconnectent seuls après la mise à jour, sans crash ; permission de veille conservée. Effet après un
   redémarrage de la TV non vérifié ; interface et clavier à valider à la télécommande.
+
+## Hestia 1.14-safe — allègements et État — 1er novembre 2026
+
+- Allègements : attente croissante après un échec réseau (au lieu d’un essai toutes les 15 s), textes de l’économiseur
+  calculés à la minute ou à la photo, 30 images/s au lieu de 60, rangées construites hors du fil principal, horloge calée
+  sur la minute. Gains non mesurés.
+- Ajouts : Réglages › État, minuteur « Éteindre dans », délai d’économiseur, prévisions, carte « En lecture », alerte de
+  nouvelle version, workflow de release. Tests et compilation verts ; **pas encore installée ni essayée sur la TV**. Le
+  minuteur repose sur `GLOBAL_ACTION_LOCK_SCREEN`, jamais déclenché : à valider en vrai.

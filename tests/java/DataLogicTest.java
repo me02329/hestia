@@ -27,7 +27,19 @@ public final class DataLogicTest {
         String url = City.searchUrl(" Saint-Étienne & co#x ", "fr");
         require(url.startsWith("https://geocoding-api.open-meteo.com/") && url.endsWith("&language=fr&name=Saint-%C3%89tienne+%26+co%23x"), url);
 
+        require(Freshness.retryDelay(1) == 60_000 && Freshness.retryDelay(2) == 120_000, "retry doubles");
+        require(Freshness.retryDelay(6) == 30 * 60_000 && Freshness.retryDelay(99) == 30 * 60_000, "retry has a ceiling");
+
+        require(Version.isNewer("v1.14", "1.13-safe") && !Version.isNewer("v1.13", "1.13-safe"), "newer");
+        require(!Version.isNewer("v1.9", "1.13-safe"), "1.9 is older than 1.13");
+        require(Version.isNewer("v1.13.1", "1.13-safe") && Version.isNewer("2.0", "1.99"), "minor and major");
+        require(Version.isTag("v1.14") && Version.isTag("1.14-safe") && !Version.isTag("<b>x") && !Version.isTag("") && !Version.isTag(null), "tag");
+
         I18n.apply("fr");
+        java.util.List<WeatherText.Day> days = java.util.Arrays.asList(
+                new WeatherText.Day("2026-11-03", 3, 14.2), new WeatherText.Day("2026-11-04", 3, 9));
+        require(WeatherText.forecastLine(days, "C").equals("Mar 14° · Mer 9°"), WeatherText.forecastLine(days, "C"));
+        require(WeatherText.forecastLine(new java.util.ArrayList<>(), "C").isEmpty(), "no forecast");
         require(WeatherText.condition(0, true).equals("Ensoleillé"), "fr clear day");
         require(WeatherText.condition(0, false).equals("Ciel dégagé"), "fr clear night");
         require(WeatherText.condition(-1, true).isEmpty(), "no reading");

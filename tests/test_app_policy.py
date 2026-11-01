@@ -17,7 +17,7 @@ class AppPolicyTests(unittest.TestCase):
                          {"android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE",
                           # User-confirmed uninstall from the app menu (Android shows its own dialog).
                           "android.permission.REQUEST_DELETE_PACKAGES",
-                          # Quick panel › Sleep after, once granted over ADB: docs/adr/001.
+                          # Quick panel's delays, once granted over ADB: docs/adr/001 and 002.
                           "android.permission.WRITE_SECURE_SETTINGS"})
         app = root.find("application")
         self.assertEqual(app.get(ANDROID + "allowBackup"), "false")
@@ -43,16 +43,17 @@ class AppPolicyTests(unittest.TestCase):
                               "127.0.0.1", "class Adb"):
                 self.assertNotIn(forbidden, path.read_text(), str(path))
 
-    def test_only_the_two_sleep_settings_can_be_written(self):
+    def test_only_the_three_delays_can_be_written(self):
         writers = re.compile(r"Settings\.(Secure|Global|System)\.put")
         for path in (ROOT / "app/src").rglob("*.java"):
             if path != SECURE_WRITER:
                 self.assertIsNone(writers.search(path.read_text()), str(path))
         source = SECURE_WRITER.read_text()
         self.assertEqual(set(re.findall(r"Settings\.(\w+)\.put\w+\(c\.getContentResolver\(\), (\w+),", source)),
-                         {("Secure", "SLEEP"), ("Secure", "ATTENTIVE")})
+                         {("Secure", "SLEEP"), ("Secure", "ATTENTIVE"), ("System", "SCREEN_OFF")})
         self.assertIn('SLEEP = "sleep_timeout", ATTENTIVE = "attentive_timeout"', source)
-        self.assertEqual(len(writers.findall(source)), 2)
+        self.assertIn("SCREEN_OFF = Settings.System.SCREEN_OFF_TIMEOUT", source)
+        self.assertEqual(len(writers.findall(source)), 3)
 
     def test_network_boundaries_with_real_jvm(self):
         self.assertIn("checks passed", jvm.run("NetTest", "data/Net.java"))
@@ -62,7 +63,8 @@ class AppPolicyTests(unittest.TestCase):
 
     def test_data_logic_with_real_jvm(self):
         self.assertIn("checks passed", jvm.run("DataLogicTest", "data/Freshness.java", "data/WeatherText.java",
-                                               "data/City.java", "data/FeedText.java", "core/I18n.java"))
+                                               "data/City.java", "data/FeedText.java", "data/Version.java",
+                                               "core/I18n.java"))
 
     def test_core_logic_with_real_jvm(self):
         self.assertIn("checks passed", jvm.run("CoreLogicTest", "core/I18n.java", "core/TimeText.java"))

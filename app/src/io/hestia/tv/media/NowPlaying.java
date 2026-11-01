@@ -74,6 +74,13 @@ public final class NowPlaying {
         return media.getPackageName();
     }
 
+    /** The title of what's playing, or "". */
+    public String song() {
+        MediaMetadata md = media.getMetadata();
+        CharSequence title = md == null ? null : md.getText(MediaMetadata.METADATA_KEY_TITLE);
+        return title == null ? "" : title.toString();
+    }
+
     public MediaMetadata metadata() {
         return media.getMetadata();
     }

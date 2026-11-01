@@ -81,7 +81,7 @@ public final class News extends Feed {
         return out;
     }
 
-    @Override protected void fetch() {
+    @Override protected void fetch() throws java.io.IOException {
         List<Headline> found = new ArrayList<>();
         for (String[] feed : FEEDS) {
             try {
@@ -90,7 +90,7 @@ public final class News extends Feed {
                 AppLog.w("news " + feed[0] + ": " + Net.safeError(e));
             }
         }
-        if (found.isEmpty()) return;
+        if (found.isEmpty()) throw new java.io.IOException("no feed answered");
         Collections.sort(found, (a, b) -> Long.compare(b.at, a.at));
         List<Headline> unique = new ArrayList<>();
         Set<String> seen = new HashSet<>();

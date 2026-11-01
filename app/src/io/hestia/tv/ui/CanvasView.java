@@ -14,6 +14,7 @@ public abstract class CanvasView extends View implements Choreographer.FrameCall
 
     private boolean attached, framePending;
     private long lastNanos;
+    private int frame;
     /** Screen pixels per design pixel. */
     protected float scale = 1;
 
@@ -40,8 +41,18 @@ public abstract class CanvasView extends View implements Choreographer.FrameCall
         Choreographer.getInstance().postFrameCallback(this);
     }
 
+    /** Draws one display frame out of this many (a slow animation doesn't need them all). */
+    protected int framePace() {
+        return 1;
+    }
+
     @Override public final void doFrame(long nanos) {
         framePending = false;
+        if (attached && ++frame % framePace() != 0) {
+            framePending = true;
+            Choreographer.getInstance().postFrameCallback(this);
+            return;
+        }
         float dt = lastNanos == 0 ? 1 / 60f : Math.min(0.05f, (nanos - lastNanos) / 1e9f);
         lastNanos = nanos;
         boolean moving = animate(dt);

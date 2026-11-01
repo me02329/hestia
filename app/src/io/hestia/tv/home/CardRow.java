@@ -74,6 +74,7 @@ final class CardRow {
                     case INPUT: from = 0xFF4F8CF7; to = 0xFF3B2FB8; break;
                     case HESTIA_SETTINGS: from = 0xFF2E2448; to = 0xFF120C1E; break;
                     case SEARCH: from = 0xFF8B6CFF; to = 0xFF2F5BD3; break;
+                    case NOW_PLAYING: from = 0xFF1ED760; to = 0xFF0B5E2C; break;
                     default: from = 0xFF1FB5A3; to = 0xFF0E5470; break;
                 }
                 g = new LinearGradient(0, 0, 1, 1, from, to, Shader.TileMode.CLAMP);

@@ -116,6 +116,13 @@ public final class AppCatalog {
 
     /** Every TV app that can be opened (not this one, nor live TV apps or the never-listed ones), by name. */
     public static List<Card> allApps(Context c) {
+        List<Card> cards = appNames(c);
+        for (Card card : cards) card.tile = AppTiles.of(c, card.pkg);
+        return cards;
+    }
+
+    /** The same list without the art, which is what's slow: for lists of names. */
+    public static List<Card> appNames(Context c) {
         PackageManager pm = c.getPackageManager();
         Set<String> skip = new HashSet<>(Arrays.asList(TvInputs.LIVE_TV_APPS));
         skip.add(c.getPackageName());
@@ -128,7 +135,6 @@ public final class AppCatalog {
             if (skip.contains(pkg) || !seen.add(pkg)) continue;
             Card card = new Card(Card.Kind.APP, pkg, String.valueOf(ri.loadLabel(pm)));
             card.pkg = pkg;
-            card.tile = AppTiles.of(c, pkg);
             cards.add(card);
         }
         Collections.sort(cards, (a, b) -> a.label.toLowerCase(Locale.ROOT).compareTo(b.label.toLowerCase(Locale.ROOT)));

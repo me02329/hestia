@@ -1,5 +1,6 @@
 package io.hestia.tv;
 
+import android.content.ComponentName;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -26,7 +27,7 @@ public class HomeActivity extends HestiaActivity {
             showRecovery();
             return;
         }
-        home = new HomeView(this);
+        home = new HomeView(this, new ComponentName(this, MediaListener.class));
         setContentView(home);
         getWindow().setBackgroundDrawable(null);
     }

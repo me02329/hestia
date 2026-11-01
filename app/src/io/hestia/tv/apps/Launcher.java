@@ -6,6 +6,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.media.tv.TvContract;
 import android.net.Uri;
 import android.os.Bundle;
@@ -24,6 +25,8 @@ import io.hestia.tv.core.Screens;
  */
 public final class Launcher {
     private Launcher() {}
+
+    private static final String BROWSER_STUB = "com.android.tv.frameworkpackagestubs";
 
     /** The TV-optimized entry of an app, else its regular one; null when it can't be opened. */
     public static Intent appIntent(PackageManager pm, String pkg) {
@@ -62,6 +65,7 @@ public final class Launcher {
                 Intent intent = appIntent(c.getPackageManager(), card.pkg);
                 return intent == null ? null : intent.addFlags(Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
             }
+            case NOW_PLAYING: return appIntent(c.getPackageManager(), card.pkg);
             case LIVE_TV: return TvInputs.liveTv(c);
             case INPUT: return input(card.inputId);
             case HESTIA_SETTINGS: return Screens.settings(c);
@@ -91,6 +95,19 @@ public final class Launcher {
     /** In a task of its own: it can start from a service or from a panel over another app. */
     public static boolean start(Context c, Intent intent) {
         return attempt(c, intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), null);
+    }
+
+    /** A web page in a real browser: the default one if it isn't Android's empty "stub", otherwise the first other. */
+    public static boolean openLink(Context c, String link) {
+        Intent page = new Intent(Intent.ACTION_VIEW, Uri.parse(link)).addCategory(Intent.CATEGORY_BROWSABLE);
+        for (ResolveInfo ri : c.getPackageManager().queryIntentActivities(page, 0)) {
+            String pkg = ri.activityInfo.packageName;
+            if (!pkg.equals(BROWSER_STUB)) {
+                page.setPackage(pkg);
+                break;
+            }
+        }
+        return start(c, page);
     }
 
     /** Stacked on the current activity: Back returns to it. */
