@@ -6,7 +6,10 @@ Snapshot -> preview the installed app manually -> activate -> restore.
 
 On firmwares where Google TV's launcher outranks any chosen HOME, disable-stock-home turns off exactly the
 STOCK packages (recorded next to the backup) and selects Hestia; enable-stock-home turns those back on and puts
-the snapshot's HOME and screensaver back. No other package is ever touched.
+the snapshot's HOME and screensaver back.
+
+disable-services turns off exactly the SERVICES packages the owner doesn't want running (docs/adr/003, recorded next to
+the backup); enable-services turns those back on. No other package is ever touched.
 """
 import argparse
 from contextlib import contextmanager
@@ -25,6 +28,9 @@ import time
 HOME = "io.hestia.tv/io.hestia.tv.HomeActivity"
 # Google TV's launcher and its setup "recovery" HOME, both above any user-chosen HOME on the TCL G08.
 STOCK = ("com.google.android.apps.tv.launcherx", "com.google.android.tungsten.setupwraith")
+# Google and AirPlay background services the owner chose to turn off on 2026-11-01 (docs/adr/003).
+SERVICES = ("com.google.android.katniss", "com.google.android.syncadapters.calendar",
+            "com.mediatek.AirplayAPK", "com.mediatek.airplaydaemon", "com.tcl.airplay2")
 PACKAGE = re.compile(r"[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)+")
 DREAM = "io.hestia.tv/io.hestia.tv.Screensaver"
 SETTING = "screensaver_components"
@@ -364,10 +370,54 @@ def enable_stock_home(adb, path, assume_stock=False):
         os.unlink(stock_path(path))
 
 
+def services_path(path):
+    return Path(str(path) + ".services.json")
+
+
+def disable_services(adb, path):
+    """Disables the SERVICES still enabled and records them; a refusal skips that package. Returns those refused."""
+    saved = read_json(path)
+    same_tv(adb, saved)
+    record = read_json(services_path(path)) if services_path(path).exists() else {"packages": []}
+    disabled = adb.disabled()
+    owned = [p for p in record.get("packages", []) if p in SERVICES]
+    targets = [p for p in SERVICES if p not in disabled]
+    # Recorded before the first change, so enable-services can always undo it. Already off before this tool: not ours.
+    durable_write(services_path(path), {"schema": 1, "snapshot": digest(saved), "packages": sorted(set(owned) | set(targets))})
+    refused = []
+    for package in targets:
+        try:
+            adb.set_enabled(package, False)
+        except SafetyError:
+            refused.append(package)
+    durable_write(services_path(path), {"schema": 1, "snapshot": digest(saved),
+                                        "packages": sorted((set(owned) | set(targets)) - set(refused))})
+    return refused
+
+
+def enable_services(adb, path):
+    """Re-enables the recorded packages, and only those."""
+    saved = read_json(path)
+    same_tv(adb, saved)
+    if not services_path(path).exists():
+        raise SafetyError("No services record: nothing this tool turned off")
+    record = read_json(services_path(path))
+    if record.get("snapshot") != digest(saved):
+        raise SafetyError("Services record does not match this snapshot")
+    packages = record.get("packages", [])
+    if any(p not in SERVICES for p in packages):
+        raise SafetyError("Services record names packages this tool never disables")
+    disabled = adb.disabled()
+    for package in packages:
+        if package in disabled:
+            adb.set_enabled(package, True)
+    os.unlink(services_path(path))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("action", choices=("status", "snapshot", "activate", "restore",
-                                           "disable-stock-home", "enable-stock-home"))
+                                           "disable-stock-home", "enable-stock-home", "disable-services", "enable-services"))
     parser.add_argument("--serial", required=True, help="Exact identifier from adb devices; never auto-selects")
     parser.add_argument("--adb", default="adb")
     parser.add_argument("--backup", type=Path, help="Private JSON path; retain it and its .journal.json sibling")
@@ -388,7 +438,8 @@ def main():
             if args.action == "status":
                 print(json.dumps({"sdk": identity["sdk"], "home": adb.home(), "homes": sorted(adb.homes()),
                                   "screensaver": adb.dream(),
-                                  "stock_disabled": sorted(set(STOCK) & adb.disabled())}, indent=2))
+                                  "stock_disabled": sorted(set(STOCK) & adb.disabled()),
+                                  "services_disabled": sorted(set(SERVICES) & adb.disabled())}, indent=2))
             elif args.action == "snapshot":
                 snapshot(adb, args.backup)
                 print("Snapshot saved; TV unchanged.")
@@ -398,6 +449,14 @@ def main():
             elif args.action == "enable-stock-home":
                 enable_stock_home(adb, args.backup, args.assume_stock)
                 print("Stock home re-enabled; original HOME and screensaver verified.")
+            elif args.action == "disable-services":
+                refused = disable_services(adb, args.backup)
+                print("Services disabled. Undo with enable-services.")
+                if refused:
+                    print("Refused by the TV, left as they were: " + ", ".join(refused))
+            elif args.action == "enable-services":
+                enable_services(adb, args.backup)
+                print("Services re-enabled.")
             elif args.action == "activate":
                 activate(adb, args.backup, args.screensaver)
                 print("Default HOME verified. Test the Home button, inputs, shortcuts and restart on the TV.")

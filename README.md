@@ -101,7 +101,8 @@ temperature=C      # C, F ou auto
 > [!NOTE]
 > Sur certaines TV Google TV (dont la TCL G08), le launcher d’origine passe avant tout accueil choisi.
 > `tv_safe.py disable-stock-home` désactive alors **uniquement** le launcher Google et l’écran de récupération du
-> setup, en l’enregistrant ; `enable-stock-home` remet tout comme avant.
+> setup, en l’enregistrant ; `enable-stock-home` remet tout comme avant. `disable-services` allège aussi la TV
+> (recherche vocale, Agenda, AirPlay), voir [SAFE-DEPLOYMENT.md](SAFE-DEPLOYMENT.md).
 
 ## 🔐 Vie privée & sécurité
 

@@ -13,7 +13,8 @@ Read README.md and SAFE-DEPLOYMENT.md before deployment.
   owner asking and a new ADR.
 - In-app code never disables packages. On the owner's explicit decision (2026-10-21) the TV runs with
   `launcherx` and `setupwraith` disabled; only tools/tv_safe.py (disable/enable-stock-home, STOCK list) may
-  change them. Never disable anything else (AirPlay, TCL services…) without the owner asking.
+  change them. On the owner's decision (2026-11-01, docs/adr/003) voice search, Google Calendar and AirPlay are off too
+  (disable/enable-services, SERVICES list). Never disable anything else (TCL services, Chromecast…) without the owner asking.
 - Never claim automatic restoration when ADB is unavailable; the app offers recovery navigation only.
 - Use tools/tv_safe.py over the user's already paired ADB transport. Require an explicit serial.
 - Snapshot before switching; preserve the immutable snapshot and operation journal. Never infer an original HOME

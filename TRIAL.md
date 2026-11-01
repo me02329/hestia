@@ -167,3 +167,7 @@ Le retour utilisateur signale des éléments manquants en haut. La capture confi
 - Ajouts : Réglages › État, minuteur « Éteindre dans », délai d’économiseur, prévisions, carte « En lecture », alerte de
   nouvelle version, workflow de release. Tests et compilation verts ; **pas encore installée ni essayée sur la TV**. Le
   minuteur repose sur `GLOBAL_ACTION_LOCK_SCREEN`, jamais déclenché : à valider en vrai.
+- 1.14-safe installée sur la TV le 1er novembre 2026 (Canal+ au premier plan, non interrompu) ; services reconnectés seuls.
+- `disable-services` sur décision du propriétaire : recherche vocale, Agenda et AirPlay désactivés, Chromecast conservé.
+  Mémoire disponible : 727 Mo avant, 746 Mo juste après ; `com.mediatek.airplaydaemon`, désactivé, tourne encore jusqu’au
+  prochain redémarrage (à vérifier). Effet sur le bouton micro et la carte Rechercher à constater à la télécommande.

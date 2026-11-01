@@ -58,6 +58,16 @@ ouvrent les pages de la TV, voir [les décisions](docs/adr/)) :
 L’économiseur Ambient de Google cesse de fonctionner sans son launcher (la TV passait directement en veille) :
 d’où l’économiseur Hestia. L’accès aux notifications sert uniquement au lecteur du panneau rapide.
 
+## Alléger la TV (facultatif)
+
+Désactive la recherche vocale Google, l’Agenda Google et AirPlay, et rien d’autre ([décision](docs/adr/003-services-desactives.md)).
+Le bouton micro et AirPlay ne marchent plus ensuite.
+
+```sh
+python3 tools/tv_safe.py disable-services --adb "$ADB" --serial "$TV_SERIAL" --backup "$BACKUP"
+python3 tools/tv_safe.py enable-services --adb "$ADB" --serial "$TV_SERIAL" --backup "$BACKUP"   # retour
+```
+
 ## Publier une version
 
 Le workflow `release.yml` compile et publie l’APK quand on pousse un tag `vX.Y`, identique à `versionName` sans `-safe`.
