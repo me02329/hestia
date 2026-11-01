@@ -58,6 +58,24 @@ voir [la décision](docs/adr/001-write-secure-settings.md)) :
 L’économiseur Ambient de Google cesse de fonctionner sans son launcher (la TV passait directement en veille) :
 d’où l’économiseur Hestia. L’accès aux notifications sert uniquement au lecteur du panneau rapide.
 
+## Après une mise à jour de l’APK
+
+La mise à jour arrête Hestia, et le firmware TCL refuse alors de reconnecter ses services tant que l’autostart n’est pas
+autorisé (`TclAppBoot: forbid bind service`, logcat). Les touches dans les apps et le lecteur du panneau rapide ne
+marchent plus. Une fois Hestia relancée (touche Home), reconnecter les deux :
+
+```sh
+"$ADB" -s "$TV_SERIAL" shell settings delete secure enabled_accessibility_services
+"$ADB" -s "$TV_SERIAL" shell settings put secure enabled_accessibility_services io.hestia.tv/io.hestia.tv.RemoteKeysService
+"$ADB" -s "$TV_SERIAL" shell settings put secure accessibility_enabled 1
+"$ADB" -s "$TV_SERIAL" shell cmd notification disallow_listener io.hestia.tv/io.hestia.tv.MediaListener
+"$ADB" -s "$TV_SERIAL" shell cmd notification allow_listener io.hestia.tv/io.hestia.tv.MediaListener
+```
+
+La première commande efface toute la liste : si d’autres services y figurent, les remettre dans la deuxième, séparés
+par `:`. Basculer seulement `accessibility_enabled` ne relance pas la connexion. Vérifier :
+`dumpsys accessibility | grep "Bound services"`.
+
 ## 3. Revenir à Google TV
 
 ```sh

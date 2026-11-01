@@ -141,3 +141,9 @@ Le retour utilisateur signale des éléments manquants en haut. La capture confi
 - Ajouts à valider à la télécommande : ligne « Mise en veille » du panneau rapide (après `pm grant`, voir
   SAFE-DEPLOYMENT.md ; la lecture de `sleep_timeout` par une app n’a pas pu être essayée), touche TV et appui long dans
   les apps (le filtre d’accessibilité doit recevoir le code 4001 ; l’appui long est chronométré à 600 ms).
+- Installée sur la TV le 1er novembre 2026 (`install -r`, Canal+ au premier plan, non interrompu) et lancée par le
+  propriétaire : version 1.12-safe affichée, aucun crash dans logcat. `pm grant WRITE_SECURE_SETTINGS` accordé.
+- Après la mise à jour, `RemoteKeysService` et `MediaListener` déconnectés et `accessibility_enabled` à 0 :
+  `TclAppBoot` refuse la connexion (`callee_does't_have_OP_AUTO_START_permission`, `AUTO_START: ignore`). Hestia relancée,
+  basculer `accessibility_enabled` ne suffit pas ; réécrire la liste des services et le listener reconnecte les deux
+  (procédure dans SAFE-DEPLOYMENT.md). Comportement après un redémarrage de la TV non vérifié.
